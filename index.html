@@ -260,6 +260,7 @@
                 <div class="form-group">
                     <label for="customerPhone">Customer Phone Number<span class="req">*</span></label>
                     <input type="tel" id="customerPhone" class="logic-field" placeholder="(801) 555-0199" required>
+                    <p class="field-note">Digits only — pasted formatting is stripped automatically.</p>
                 </div>
 
                 <div class="form-group">
@@ -307,8 +308,7 @@
                         <select id="retentionOutcome" class="logic-field" required>
                             <option value="">-- Select Outcome --</option>
                             <option value="saved">Saved</option>
-                            <option value="cancelled">Cancelled</option>
-                            <option value="transferred_jake">Transferred to Jake</option>
+                            <option value="cancelled_sent_to_jake">Cancel/Sent to Jake</option>
                         </select>
                     </div>
 
@@ -317,23 +317,16 @@
                             <label for="cancelReason">Cancellation Reason<span class="req">*</span></label>
                             <select id="cancelReason" class="logic-field" required></select>
                         </div>
+                        <div class="form-group">
+                            <label for="customerAccountNumber">Customer Account Number<span class="req">*</span></label>
+                            <input type="text" id="customerAccountNumber" class="logic-field" inputmode="numeric" placeholder="Digits only" required>
+                        </div>
                     </div>
 
                     <div class="subfield" id="block-retention-saved" hidden>
                         <div class="form-group">
                             <label for="discountAmount">How much money was discounted?<span class="req">*</span></label>
                             <input type="text" id="discountAmount" class="logic-field" inputmode="numeric" placeholder="$0" required>
-                        </div>
-                    </div>
-
-                    <div class="subfield" id="block-retention-transferred" hidden>
-                        <div class="form-group">
-                            <label for="transferReason">Reason<span class="req">*</span></label>
-                            <select id="transferReason" class="logic-field" required></select>
-                        </div>
-                        <div class="form-group">
-                            <label for="customerAccountNumber">Customer Account Number<span class="req">*</span></label>
-                            <input type="text" id="customerAccountNumber" class="logic-field" inputmode="numeric" placeholder="Digits only" required>
                         </div>
                     </div>
                 </div>
@@ -460,11 +453,9 @@
     const retentionOutcome   = el('retentionOutcome');
     const blockCancelled     = el('block-retention-cancelled');
     const cancelReason       = el('cancelReason');
+    const customerAccountNumber = el('customerAccountNumber');
     const blockSaved         = el('block-retention-saved');
     const discountAmount     = el('discountAmount');
-    const blockTransferred   = el('block-retention-transferred');
-    const transferReason     = el('transferReason');
-    const customerAccountNumber = el('customerAccountNumber');
 
     const salesOutcome       = el('salesOutcome');
     const blockNotSold       = el('block-not-sold');
@@ -516,7 +507,6 @@
             }).join('');
     }
     populateReasonSelect(cancelReason);
-    populateReasonSelect(transferReason);
 
     // =========================================================================
     // PACKAGE DEFINITIONS
@@ -577,12 +567,20 @@
                 <div class="form-group">
                     <label>Weighted Stations</label>
                     <input type="number" class="pkg-trbs-weighted" data-pkgid="${pkgid}" min="0" step="1" value="0">
-                    <p class="field-note">$75 first station, $45 each additional.</p>
                 </div>
+                <div class="form-group">
+                    <label>Price per Weighted Station</label>
+                    <input type="number" class="pkg-trbs-weighted-price" data-pkgid="${pkgid}" min="45" max="75" step="1" placeholder="$45–$75">
+                </div>
+            </div>
+            <div class="grid-2">
                 <div class="form-group">
                     <label>Landscape Stations</label>
                     <input type="number" class="pkg-trbs-landscape" data-pkgid="${pkgid}" min="0" step="1" value="0">
-                    <p class="field-note">$75 first station, $55 each additional.</p>
+                </div>
+                <div class="form-group">
+                    <label>Price per Landscape Station</label>
+                    <input type="number" class="pkg-trbs-landscape-price" data-pkgid="${pkgid}" min="55" max="75" step="1" placeholder="$55–$75">
                 </div>
             </div>
             <div class="form-group">
@@ -594,7 +592,6 @@
                 </select>
                 <input type="number" class="pkg-trbs-monitoring-amount" data-pkgid="${pkgid}" placeholder="Typically $75–$95" min="0" step="0.01" aria-label="TRBS Monthly Monitoring Amount" required hidden>
             </div>
-            <p class="helper-text">Structure pending confirmation — best guess from the team, not yet finalized.</p>
         `;
     }
 
@@ -615,9 +612,17 @@
                 <select class="logic-field pkg-tick-tier" data-pkgid="${pkgid}" required>
                     <option value="">-- Select Tier --</option>
                     <option value="one_time">One-Time (up to 2 acres) — $350</option>
-                    <option value="monthly_1acre">Monthly, up to 1 Acre — $225 initial / $125 mo</option>
-                    <option value="monthly_2acre">Monthly, up to 2 Acres — $265 initial / $165 mo</option>
+                    <option value="monthly_1acre">Monthly, up to 1 Acre — $225/$125mo (w/ devices) or $125/$125mo (spray only)</option>
+                    <option value="monthly_2acre">Monthly, up to 2 Acres — $265/$165mo (w/ devices) or $165/$165mo (spray only)</option>
                     <option value="monthly_3acre">Monthly, up to 3 Acres — Custom / Free Estimate</option>
+                </select>
+            </div>
+            <div class="form-group pkg-tick-devices-group" data-pkgid="${pkgid}" hidden>
+                <label>Includes Mosquito-Con Devices?<span class="req">*</span></label>
+                <select class="logic-field pkg-tick-devices" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select --</option>
+                    <option value="with_devices">With Devices</option>
+                    <option value="spray_only">Spray Only (no devices)</option>
                 </select>
             </div>
             <div class="grid-2 pkg-tick-custom" data-pkgid="${pkgid}" hidden>
@@ -710,10 +715,20 @@
             const amt = t.closest('.form-group').querySelector('.pkg-trbs-monitoring-amount');
             if (t.value === 'monthly') { amt.hidden = false; } else { amt.value = ''; amt.hidden = true; }
         } else if (t.classList.contains('pkg-tick-tier')) {
-            const custom = t.closest('.package-fields').querySelector('.pkg-tick-custom');
-            if (t.value === 'monthly_3acre') { custom.hidden = false; } else {
+            const fieldsRoot = t.closest('.package-fields');
+            const custom = fieldsRoot.querySelector('.pkg-tick-custom');
+            const devicesGroup = fieldsRoot.querySelector('.pkg-tick-devices-group');
+            if (t.value === 'monthly_3acre') {
+                custom.hidden = false;
+            } else {
                 custom.querySelectorAll('input').forEach((i) => { i.value = ''; });
                 custom.hidden = true;
+            }
+            if (t.value === 'monthly_1acre' || t.value === 'monthly_2acre') {
+                devicesGroup.hidden = false;
+            } else {
+                devicesGroup.querySelector('.pkg-tick-devices').value = '';
+                devicesGroup.hidden = true;
             }
         }
     });
@@ -749,7 +764,9 @@
         if (def.kind === 'trbs') {
             return {
                 weightedQty: numVal('.pkg-trbs-weighted'),
+                weightedPrice: numVal('.pkg-trbs-weighted-price'),
                 landscapeQty: numVal('.pkg-trbs-landscape'),
+                landscapePrice: numVal('.pkg-trbs-landscape-price'),
                 monitoring: selVal('.pkg-trbs-monitoring'),
                 monitoringAmount: numVal('.pkg-trbs-monitoring-amount')
             };
@@ -760,6 +777,7 @@
         if (def.kind === 'tick_mosquito') {
             return {
                 tier: selVal('.pkg-tick-tier'),
+                devices: selVal('.pkg-tick-devices'),
                 customInitial: numVal('.pkg-tick-custom-initial'),
                 customMonthly: numVal('.pkg-tick-custom-monthly')
             };
@@ -781,12 +799,13 @@
             return result;
         }
         if (def.kind === 'trbs') {
-            const wq = f.weightedQty || 0, lq = f.landscapeQty || 0;
-            const installCost = (wq > 0 ? 75 + Math.max(0, wq - 1) * 45 : 0) + (lq > 0 ? 75 + Math.max(0, lq - 1) * 55 : 0);
+            const wq = f.weightedQty || 0, wp = f.weightedPrice || 0;
+            const lq = f.landscapeQty || 0, lp = f.landscapePrice || 0;
+            const installCost = (wq * wp) + (lq * lp);
             const monitoringMonthly = f.monitoring === 'monthly' ? (f.monitoringAmount || 0) : 0;
             const revenue = installCost + (monitoringMonthly * 11);
             return {
-                package: def.label, trbsWeightedQty: wq, trbsLandscapeQty: lq,
+                package: def.label, trbsWeightedQty: wq, trbsWeightedPrice: wp, trbsLandscapeQty: lq, trbsLandscapePrice: lp,
                 trbsMonitoring: f.monitoring || null, trbsMonitoringMonthly: f.monitoring === 'monthly' ? monitoringMonthly : null,
                 revenue
             };
@@ -799,11 +818,34 @@
             return { package: def.label, mosquitoDevices: devices, initialPrice: initial, monthlyPrice: monthly, revenue: initial + monthly * 11 };
         }
         if (def.kind === 'tick_mosquito') {
-            const TIERS = { one_time: { initial: 350, monthly: 0 }, monthly_1acre: { initial: 225, monthly: 125 }, monthly_2acre: { initial: 265, monthly: 165 } };
             let initial, monthly;
-            if (f.tier === 'monthly_3acre') { initial = f.customInitial || 0; monthly = f.customMonthly || 0; }
-            else { const t = TIERS[f.tier] || { initial: 0, monthly: 0 }; initial = t.initial; monthly = t.monthly; }
-            return { package: def.label, tickMosquitoTier: f.tier || null, initialPrice: initial, monthlyPrice: monthly || null, revenue: initial + monthly * 11 };
+            if (f.tier === 'monthly_3acre') {
+                initial = f.customInitial || 0;
+                monthly = f.customMonthly || 0;
+            } else if (f.tier === 'one_time') {
+                initial = 350;
+                monthly = 0;
+            } else {
+                // monthly_1acre / monthly_2acre: price forks on devices included,
+                // confirmed by the sales manager — only the initial price moves,
+                // monthly stays the same either way.
+                const TIERS = {
+                    monthly_1acre: { with_devices: { initial: 225, monthly: 125 }, spray_only: { initial: 125, monthly: 125 } },
+                    monthly_2acre: { with_devices: { initial: 265, monthly: 165 }, spray_only: { initial: 165, monthly: 165 } }
+                };
+                const variant = (TIERS[f.tier] || {})[f.devices] || { initial: 0, monthly: 0 };
+                initial = variant.initial;
+                monthly = variant.monthly;
+            }
+            const isMonthlyTier = f.tier === 'monthly_1acre' || f.tier === 'monthly_2acre';
+            return {
+                package: def.label,
+                tickMosquitoTier: f.tier || null,
+                tickMosquitoDevices: isMonthlyTier ? (f.devices || null) : null,
+                initialPrice: initial,
+                monthlyPrice: monthly || null,
+                revenue: initial + monthly * 11
+            };
         }
         return null;
     }
@@ -856,9 +898,8 @@
             if (ct === 'retention') {
                 show(blockRetention);
                 const outcome = retentionOutcome.value;
-                outcome === 'cancelled' ? show(blockCancelled) : hideAndClear(blockCancelled);
+                outcome === 'cancelled_sent_to_jake' ? show(blockCancelled) : hideAndClear(blockCancelled);
                 outcome === 'saved' ? show(blockSaved) : hideAndClear(blockSaved);
-                outcome === 'transferred_jake' ? show(blockTransferred) : hideAndClear(blockTransferred);
             } else {
                 hideAndClear(blockRetention);
             }
@@ -916,14 +957,12 @@
             if (callType.value === 'retention') {
                 payload.customerName = customerNameRetention.value.trim();
                 payload.retention = { outcome: retentionOutcome.value };
-                if (retentionOutcome.value === 'cancelled') {
+                if (retentionOutcome.value === 'cancelled_sent_to_jake') {
                     payload.retention.cancelReason = cancelReason.value;
+                    payload.retention.customerAccountNumber = customerAccountNumber.value;
                 } else if (retentionOutcome.value === 'saved') {
                     const raw = discountAmount.value.replace(/[^\d]/g, '');
                     payload.retention.discountAmount = raw ? Number(raw) : null;
-                } else if (retentionOutcome.value === 'transferred_jake') {
-                    payload.retention.transferReason = transferReason.value;
-                    payload.retention.customerAccountNumber = customerAccountNumber.value;
                 }
             }
 
@@ -1008,6 +1047,10 @@
                 const wq = Number(inst.querySelector('.pkg-trbs-weighted').value) || 0;
                 const lq = Number(inst.querySelector('.pkg-trbs-landscape').value) || 0;
                 if (wq === 0 && lq === 0) missing.push('TRBS: enter at least one station quantity');
+                const wp = Number(inst.querySelector('.pkg-trbs-weighted-price').value) || 0;
+                const lp = Number(inst.querySelector('.pkg-trbs-landscape-price').value) || 0;
+                if (wq > 0 && wp === 0) missing.push('TRBS: enter a price for the Weighted Station(s)');
+                if (lq > 0 && lp === 0) missing.push('TRBS: enter a price for the Landscape Station(s)');
             }
         });
 
