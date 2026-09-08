@@ -271,11 +271,11 @@
         return sub.submissionType === 'inbound_call' && sub.callType === 'inbound_sales';
     }
 
-    // PROVISIONAL — confirm tomorrow. Only the live "Inbound Sales
-    // Opportunity" path counts toward Closed/Taken, Inbound Close Rate,
-    // and Total Revenue. Sale Submission entries (inbound_call_sale or
-    // outbound_call_sale) are excluded from all three here, even though
-    // inbound_call_sale is also "inbound" in origin — open question.
+    // Only the live "Inbound Sales Opportunity" path counts toward
+    // Closed/Taken, Inbound Close Rate, and Total Revenue. This used to be
+    // an open question (whether Sale Submission → Inbound Call Sale should
+    // also count), but that path no longer exists — Sale Submission is now
+    // always outbound, so there's no ambiguity left here.
     function isSoldInboundCall(sub) {
         return isInboundSalesOpportunity(sub) && sub.sold === true;
     }
@@ -364,13 +364,13 @@
     function computeSalesBreakdown(docs) {
         const sold = docs.filter((d) => d.sold === true);
         const total = sold.length;
-        let inboundOpportunity = 0, subInbound = 0, subOutbound = 0;
+        let inboundOpportunity = 0, outboundSubmission = 0, other = 0;
         sold.forEach((d) => {
             if (isInboundSalesOpportunity(d)) inboundOpportunity++;
-            else if (d.submissionType === 'sale_submission' && d.saleType === 'inbound_call_sale') subInbound++;
-            else if (d.submissionType === 'sale_submission' && d.saleType === 'outbound_call_sale') subOutbound++;
+            else if (d.submissionType === 'outbound_sale_submission') outboundSubmission++;
+            else other++; // stale test docs from before Sale Submission was outbound-only
         });
-        return { total, inboundOpportunity, subInbound, subOutbound };
+        return { total, inboundOpportunity, outboundSubmission, other };
     }
 
     // ===========================================================================
@@ -434,9 +434,9 @@
         }
         const rows = [
             { label: 'Inbound Sales Opportunity', count: s.inboundOpportunity },
-            { label: 'Sale Submission — Inbound', count: s.subInbound },
-            { label: 'Sale Submission — Outbound', count: s.subOutbound }
+            { label: 'Outbound Sale Submission', count: s.outboundSubmission }
         ];
+        if (s.other > 0) rows.push({ label: 'Other (legacy)', count: s.other });
         container.innerHTML = rows.map((r) => {
             const pct = s.total > 0 ? (r.count / s.total) * 100 : 0;
             return `
