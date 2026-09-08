@@ -171,8 +171,11 @@
     #submit-status.error { color: var(--danger); }
     #submit-status.success { color: var(--color-mint-soft); }
 
-    #pin-status.pin-ok { color: var(--color-mint-soft); font-weight: 700; }
-    #pin-status.pin-error { color: var(--danger); }
+    .pin-ok { color: var(--color-mint-soft); font-weight: 700; }
+    .pin-error { color: var(--danger); font-weight: 600; }
+
+    #login-gate { margin-top: 10vh; }
+    #logger-app header a:hover { color: var(--text-on-dark); }
 
 </style>
 
@@ -187,15 +190,16 @@
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    const firebaseConfig = {
-  apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
-  authDomain: "resteasycalltracking.firebaseapp.com",
-  projectId: "resteasycalltracking",
-  storageBucket: "resteasycalltracking.firebasestorage.app",
-  messagingSenderId: "744235430121",
-  appId: "1:744235430121:web:aa650ff3b7a3b570844078",
-  measurementId: "G-8VGJSMTXP6"
+     const firebaseConfig = {
+  apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
+  authDomain: "resteasycalltracking-b6441.firebaseapp.com",
+  projectId: "resteasycalltracking-b6441",
+  storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
+  messagingSenderId: "202833392651",
+  appId: "1:202833392651:web:eff40e11f8b89aab39430e",
+  measurementId: "G-2WC8RZW39P"
 };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
@@ -213,36 +217,58 @@
 <body>
 
 <div id="page">
-    <header>
-        <h1>Call Logger</h1>
-        <p>Fields are dynamic based on your selections below.</p>
-    </header>
 
-    <form id="logger-form" novalidate>
+    <!-- ============ LOGIN GATE ============
+         Shown once per browser tab/session. A correct PIN hides this and
+         reveals #logger-app; the rep's name is stashed in sessionStorage
+         so it survives every submission (and a page refresh) without
+         asking again, until they close the tab or hit "Switch user". -->
+    <div id="login-gate">
+        <header style="text-align:center;">
+            <h1>Call Logger</h1>
+            <p>Enter your PIN to get started.</p>
+        </header>
+        <div class="form-section" style="max-width:280px; margin:0 auto;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label for="gatePin" style="text-align:center;">Your PIN<span class="req">*</span></label>
+                <input type="password" id="gatePin" inputmode="numeric" pattern="[0-9]*" maxlength="4"
+                    autocomplete="off" autofocus placeholder="••••"
+                    style="text-align:center; font-size:24px; letter-spacing:10px;">
+                <p class="helper-text" id="gate-status" style="text-align:center;">Enter your 4-digit PIN.</p>
+            </div>
+        </div>
+    </div>
 
-        <!-- ============ ALWAYS-PRESENT FIELDS ============ -->
-        <div class="form-section">
-            <h2>Basics</h2>
-            <div class="grid-2">
+    <div id="logger-app" hidden>
+        <header style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+            <div>
+                <h1>Call Logger</h1>
+                <p>Fields are dynamic based on your selections below.</p>
+            </div>
+            <div style="text-align:right; font-size:12px; color:var(--color-mint-soft); white-space:nowrap;">
+                Logged in as <strong id="logged-in-name"></strong><br>
+                <a href="#" id="switch-user-link" style="color:var(--color-mint-soft); text-decoration:underline; font-size:11px;">Not you? Switch user</a>
+            </div>
+        </header>
+
+        <form id="logger-form" novalidate>
+            <input type="hidden" id="salesRep" value="">
+
+            <!-- ============ ALWAYS-PRESENT FIELDS ============ -->
+            <div class="form-section">
+                <h2>Basics</h2>
                 <div class="form-group">
                     <label for="customerPhone">Customer Phone Number<span class="req">*</span></label>
                     <input type="tel" id="customerPhone" class="logic-field" placeholder="(801) 555-0199" required>
                 </div>
-                <div class="form-group">
-                    <label for="repPin">Your PIN<span class="req">*</span></label>
-                    <input type="password" id="repPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
-                    <p class="helper-text" id="pin-status">Enter your 4-digit PIN.</p>
-                    <input type="hidden" id="salesRep" value="">
-                </div>
-            </div>
 
-            <div class="form-group">
-                <label for="submissionType">Submission Type<span class="req">*</span></label>
-                <select id="submissionType" class="logic-field" required>
-                    <option value="">-- Select Type --</option>
-                    <option value="inbound_call">Inbound Call</option>
-                    <option value="sale_submission">Sale Submission</option>
-                </select>
+                <div class="form-group">
+                    <label for="submissionType">Submission Type<span class="req">*</span></label>
+                    <select id="submissionType" class="logic-field" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="inbound_call">Inbound Call</option>
+                        <option value="sale_submission">Sale Submission</option>
+                    </select>
             </div>
         </div>
 
@@ -423,7 +449,8 @@
         <button type="submit" class="btn-primary">Submit</button>
         <div id="submit-status"></div>
     </form>
-</div>
+    </div><!-- /logger-app -->
+</div><!-- /page -->
 
 <script>
 (function () {
@@ -433,10 +460,15 @@
     const el = (id) => document.getElementById(id);
 
     const customerPhone   = el('customerPhone');
-    const repPin          = el('repPin');
-    const pinStatus       = el('pin-status');
-    const salesRep        = el('salesRep'); // hidden field; holds the matched rep's name once a valid PIN is entered
+    const salesRep        = el('salesRep'); // hidden field; holds the logged-in rep's name for the whole session
     const submissionType  = el('submissionType');
+
+    const loginGate       = el('login-gate');
+    const loggerApp       = el('logger-app');
+    const gatePin         = el('gatePin');
+    const gateStatus      = el('gate-status');
+    const loggedInName    = el('logged-in-name');
+    const switchUserLink  = el('switch-user-link');
 
     const sectionInbound  = el('section-inbound-call');
     const sectionSale     = el('section-sale-submission');
@@ -677,9 +709,9 @@
     });
 
     // ---- Load reps from Firestore (managed via admin.html) -----------------
-    // Builds a PIN -> name lookup instead of populating a dropdown. Only
-    // active reps with a PIN assigned are sign-in-able; a rep without a PIN
-    // yet just can't log in until admin.html assigns them one.
+    // Builds a PIN -> name lookup. Only active reps with a PIN assigned can
+    // log in; a rep without a PIN yet just can't sign in until admin.html
+    // assigns them one.
     let repsByPin = {};
 
     async function loadReps() {
@@ -695,46 +727,77 @@
                 if (!data.pin) return;
                 repsByPin[String(data.pin)] = data.name;
             });
-            checkPin(); // re-validate in case the rep already typed a PIN before this loaded
         } catch (err) {
             console.error('Could not load reps:', err);
-            submitStatus.textContent = 'Could not load rep list — check Firebase config.';
-            submitStatus.className = 'error';
+            gateStatus.textContent = 'Could not load rep list — check Firebase config.';
+            gateStatus.className = 'helper-text pin-error';
         }
     }
 
-    // ---- PIN matching --------------------------------------------------------
-    // This is lightweight identification, not real security: it confirms
-    // "this is definitely Sarah" for the record, nothing more. No lockouts,
-    // no hashing — matches the anonymous-auth threat model this app already
-    // accepts (see firestore.rules).
-    function checkPin() {
-        const pin = repPin.value.trim();
-        if (!pin) {
-            salesRep.value = '';
-            pinStatus.textContent = 'Enter your 4-digit PIN.';
-            pinStatus.className = 'helper-text';
-            return;
-        }
+    // ---- Login gate ----------------------------------------------------------
+    // A PIN is lightweight identification, not real security: it confirms
+    // "this is definitely Sarah" once per session and nothing more. It logs
+    // the rep in ONCE — not once per submission — and sticks for as long as
+    // this browser tab stays open (sessionStorage), surviving page reloads
+    // too. Matches the anonymous-auth threat model this app already accepts.
+    const SESSION_KEY = 'callLoggerRepName';
+
+    function showApp(name) {
+        salesRep.value = name;
+        salesRep.setAttribute('value', name); // so form.reset() after each submit restores this, not blank
+        loggedInName.textContent = name;
+        loginGate.hidden = true;
+        loggerApp.hidden = false;
+    }
+
+    function showGate() {
+        loggerApp.hidden = true;
+        loginGate.hidden = false;
+        gatePin.value = '';
+        gateStatus.textContent = 'Enter your 4-digit PIN.';
+        gateStatus.className = 'helper-text';
+        gatePin.focus();
+    }
+
+    function attemptLogin() {
+        const pin = gatePin.value.trim();
+        if (pin.length < 4) return;
         const match = repsByPin[pin];
         if (match) {
-            salesRep.value = match;
-            pinStatus.textContent = `✓ Logged in as ${match}`;
-            pinStatus.className = 'helper-text pin-ok';
+            sessionStorage.setItem(SESSION_KEY, match);
+            showApp(match);
         } else {
-            salesRep.value = '';
-            const ready = pin.length >= 4;
-            pinStatus.textContent = ready ? 'PIN not recognized.' : 'Enter your 4-digit PIN.';
-            pinStatus.className = ready ? 'helper-text pin-error' : 'helper-text';
+            gateStatus.textContent = 'PIN not recognized — try again.';
+            gateStatus.className = 'helper-text pin-error';
+            gatePin.value = '';
         }
     }
 
-    repPin.addEventListener('input', function () {
-        // Keep it digits-only, regardless of what device/keyboard sent.
-        const digitsOnly = repPin.value.replace(/\D/g, '').slice(0, 4);
-        if (digitsOnly !== repPin.value) repPin.value = digitsOnly;
-        checkPin();
+    gatePin.addEventListener('input', function () {
+        const digitsOnly = gatePin.value.replace(/\D/g, '').slice(0, 4);
+        if (digitsOnly !== gatePin.value) gatePin.value = digitsOnly;
+        attemptLogin();
     });
+
+    switchUserLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        sessionStorage.removeItem(SESSION_KEY);
+        salesRep.value = '';
+        salesRep.setAttribute('value', '');
+        showGate();
+    });
+
+    async function initLogin() {
+        await loadReps();
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (stored && Object.values(repsByPin).includes(stored)) {
+            showApp(stored);
+        } else {
+            if (stored) sessionStorage.removeItem(SESSION_KEY); // rep was deactivated/renamed since login
+            showGate();
+            attemptLogin(); // in case they typed a PIN while reps were still loading
+        }
+    }
 
     // ---- Submit: write to Firestore ------------------------------------------
     form.addEventListener('submit', async function (e) {
@@ -743,7 +806,7 @@
 
         const missing = [];
         if (!payload.customerPhone) missing.push('Customer Phone Number');
-        if (!payload.salesRep) missing.push('Rep PIN');
+        if (!payload.salesRep) missing.push('Rep login (please refresh and log in again)');
         if (!payload.submissionType) missing.push('Submission Type');
 
         if (missing.length) {
@@ -774,7 +837,6 @@
             submitStatus.textContent = 'Logged successfully.';
             submitStatus.className = 'success';
             form.reset();
-            checkPin();
             render();
         } catch (err) {
             console.error('Write failed:', err);
@@ -784,7 +846,7 @@
     });
 
     render();
-    loadReps();
+    initLogin();
 })();
 </script>
 
