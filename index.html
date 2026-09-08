@@ -190,14 +190,14 @@
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-     const firebaseConfig = {
-  apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
-  authDomain: "resteasycalltracking-b6441.firebaseapp.com",
-  projectId: "resteasycalltracking-b6441",
-  storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
-  messagingSenderId: "202833392651",
-  appId: "1:202833392651:web:eff40e11f8b89aab39430e",
-  measurementId: "G-2WC8RZW39P"
+   const firebaseConfig = {
+  apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
+  authDomain: "resteasycalltracking.firebaseapp.com",
+  projectId: "resteasycalltracking",
+  storageBucket: "resteasycalltracking.firebasestorage.app",
+  messagingSenderId: "744235430121",
+  appId: "1:744235430121:web:aa650ff3b7a3b570844078",
+  measurementId: "G-8VGJSMTXP6"
 };
 
     const app = initializeApp(firebaseConfig);
@@ -452,7 +452,14 @@
     </div><!-- /logger-app -->
 </div><!-- /page -->
 
-<script>
+<script type="module">
+// type="module" is required here, not cosmetic: module scripts always run
+// after the document finishes parsing, in source order relative to each
+// other. A plain <script> here would run immediately when the parser
+// reaches it — BEFORE the head's module script (which sets window.__db
+// and window.__fsFns) has executed — causing every call into Firestore
+// below to fail with "Cannot destructure ... of window.__fsFns as it is
+// undefined". Keep this as type="module".
 (function () {
     'use strict';
 
