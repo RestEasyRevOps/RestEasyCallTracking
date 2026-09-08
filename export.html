@@ -78,13 +78,13 @@
 
     // Same config as index.html and admin.html - keep all three in sync.
     const firebaseConfig = {
-        apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
-        authDomain: "resteasycalltracking.firebaseapp.com",
-        projectId: "resteasycalltracking",
-        storageBucket: "resteasycalltracking.firebasestorage.app",
-        messagingSenderId: "744235430121",
-        appId: "1:744235430121:web:aa650ff3b7a3b570844078",
-        measurementId: "G-8VGJSMTXP6"
+        apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
+        authDomain: "resteasycalltracking-b6441.firebaseapp.com",
+        projectId: "resteasycalltracking-b6441",
+        storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
+        messagingSenderId: "202833392651",
+        appId: "1:202833392651:web:eff40e11f8b89aab39430e",
+        measurementId: "G-2WC8RZW39P"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -109,7 +109,20 @@
     function flatten(obj, prefix = '', out = {}) {
         for (const [key, value] of Object.entries(obj || {})) {
             const flatKey = prefix ? `${prefix}.${key}` : key;
-            if (value && typeof value === 'object' && !Array.isArray(value) && !value.toDate) {
+            if (Array.isArray(value)) {
+                // e.g. saleDetails.packages: [{package, revenue, ...}, ...]
+                // becomes saleDetails.packages.0.package, .0.revenue,
+                // saleDetails.packages.1.package, .1.revenue, etc. — one
+                // column pair per package slot, same as every other field.
+                value.forEach((item, i) => {
+                    const itemKey = `${flatKey}.${i}`;
+                    if (item && typeof item === 'object') {
+                        flatten(item, itemKey, out);
+                    } else {
+                        out[itemKey] = item ?? '';
+                    }
+                });
+            } else if (value && typeof value === 'object' && !value.toDate) {
                 flatten(value, flatKey, out);
             } else if (value && value.toDate) {
                 // Firestore Timestamp
