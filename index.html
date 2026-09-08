@@ -268,7 +268,7 @@
                     <select id="submissionType" class="logic-field" required>
                         <option value="">-- Select Type --</option>
                         <option value="inbound_call">Inbound Call</option>
-                        <option value="sale_submission">Sale Submission</option>
+                        <option value="outbound_sale_submission">Outbound Sale Submission</option>
                     </select>
                 </div>
             </div>
@@ -366,31 +366,20 @@
                 </div>
             </div>
 
-            <!-- ============ SALE SUBMISSION PATH ============ -->
+            <!-- ============ OUTBOUND SALE SUBMISSION PATH ============ -->
             <div class="form-section subfield" id="section-sale-submission" hidden>
-                <h2>Sale Submission Details</h2>
+                <h2>Outbound Sale Submission Details</h2>
 
                 <div class="form-group">
-                    <label for="saleType">Sale Type<span class="req">*</span></label>
-                    <select id="saleType" class="logic-field" required>
-                        <option value="">-- Select Sale Type --</option>
-                        <option value="inbound_call_sale">Inbound Call Sale</option>
-                        <option value="outbound_call_sale">Outbound Call Sale</option>
+                    <label for="leadSource">Lead Source<span class="req">*</span></label>
+                    <select id="leadSource" class="logic-field" required>
+                        <option value="">-- Select Source --</option>
+                        <option value="Marketing Lead">Marketing Lead</option>
+                        <option value="AI Lead">AI Lead</option>
+                        <option value="Technician Lead">Technician Lead</option>
+                        <option value="Follow Up/Re-hash">Follow Up/Re-hash</option>
+                        <option value="Other">Other</option>
                     </select>
-                </div>
-
-                <div class="subfield" id="block-lead-source" hidden>
-                    <div class="form-group">
-                        <label for="leadSource">Lead Source<span class="req">*</span></label>
-                        <select id="leadSource" class="logic-field" required>
-                            <option value="">-- Select Source --</option>
-                            <option value="Marketing Lead">Marketing Lead</option>
-                            <option value="AI Lead">AI Lead</option>
-                            <option value="Technician Lead">Technician Lead</option>
-                            <option value="Follow Up/Re-hash">Follow Up/Re-hash</option>
-                            <option value="Other">Other</option>
-                        </select>
-                    </div>
                 </div>
 
                 <div id="anchor-sale-submission" hidden></div>
@@ -464,8 +453,6 @@
     const otherReasonText    = el('otherReasonText');
     const anchorInboundSold  = el('anchor-inbound-sold');
 
-    const saleType           = el('saleType');
-    const blockLeadSource    = el('block-lead-source');
     const leadSource         = el('leadSource');
     const anchorSaleSubmission = el('anchor-sale-submission');
 
@@ -516,7 +503,7 @@
         new_start_residential: { label: 'New Start Residential', kind: 'standard', initialOptions: [475, 350], monthlyOptions: [125] },
         inspection: { label: 'Inspection', kind: 'standard', initialOptions: [150, 0], monthlyOptions: null },
         one_time: { label: 'One-Time', kind: 'standard', initialOptions: [450, 350], monthlyOptions: null },
-        termite: { label: 'Termite', kind: 'termite', initialOptions: [450], monthlyOptions: [35] },
+        termite: { label: 'Termite', kind: 'termite' },
         trbs: { label: 'TRBS', kind: 'trbs' },
         mosquito_con: { label: 'Mosquito-Con (Add-On)', kind: 'mosquito_con' },
         tick_mosquito: { label: 'Tick & Mosquito', kind: 'tick_mosquito' }
@@ -551,15 +538,53 @@
             html += `<div class="form-group"><p class="helper-text" style="margin-top:30px;">One-time — no recurring monthly charge.</p></div>`;
         }
         html += `</div>`;
-        if (def.kind === 'termite') {
-            html += `<div class="form-group">
-                <label>Additional Stations (beyond 10)</label>
-                <input type="number" class="pkg-termite-stations" data-pkgid="${pkgid}" min="0" step="1" value="0" required>
-                <p class="field-note">$75 each. 11+ stations — consult Sales Manager first.</p>
-            </div>`;
-        }
         return html;
     }
+
+    // Termite has two entirely different billing structures (monthly plan vs.
+    // annual/pay-up-front), so it gets its own renderer rather than reusing
+    // the standard one.
+    function renderTermiteFields(pkgid) {
+        return `
+            <div class="form-group">
+                <label>Plan Type<span class="req">*</span></label>
+                <select class="logic-field pkg-termite-plan" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select Plan --</option>
+                    <option value="monthly">Monthly — $450 install / $35 per month</option>
+                    <option value="annual">Annual / Pay Up Front — $1,200 install / $420 renewal</option>
+                </select>
+            </div>
+            <div class="grid-2 pkg-termite-monthly-fields" data-pkgid="${pkgid}" hidden>
+                <div class="form-group">
+                    <label>Initial Price<span class="req">*</span></label>
+                    <select class="logic-field pkg-initial" data-pkgid="${pkgid}" required>
+                        <option value="">-- Select Price --</option>
+                        <option value="450">$450</option>
+                        <option value="other">Other (enter amount)</option>
+                    </select>
+                    <input type="number" class="pkg-initial-other" data-pkgid="${pkgid}" placeholder="Enter amount" min="0" step="0.01" aria-label="Initial Price (Other Amount)" required hidden>
+                </div>
+                <div class="form-group">
+                    <label>Monthly Price<span class="req">*</span></label>
+                    <select class="logic-field pkg-monthly" data-pkgid="${pkgid}" required>
+                        <option value="">-- Select Price --</option>
+                        <option value="35">$35</option>
+                        <option value="other">Other (enter amount)</option>
+                    </select>
+                    <input type="number" class="pkg-monthly-other" data-pkgid="${pkgid}" placeholder="Enter amount" min="0" step="0.01" aria-label="Monthly Price (Other Amount)" required hidden>
+                </div>
+            </div>
+            <div class="pkg-termite-annual-note" data-pkgid="${pkgid}" hidden>
+                <div class="note-box">Recorded as $1,200 initial / $420 per year renewal. Only the $1,200 counts toward this sale's revenue — the renewal is next year's billing, not this one.</div>
+            </div>
+            <div class="form-group">
+                <label>Additional Stations (beyond 10)</label>
+                <input type="number" class="pkg-termite-stations" data-pkgid="${pkgid}" min="0" step="1" value="0" required>
+                <p class="field-note">$75 each. 11+ stations — consult Sales Manager first. Applies to either plan type.</p>
+            </div>
+        `;
+    }
+
 
     function renderTrbsFields(pkgid) {
         return `
@@ -645,7 +670,8 @@
         const fieldsContainer = wrapper.querySelector('.package-fields');
         const def = PACKAGES[pkgKey];
         if (!def) { fieldsContainer.innerHTML = ''; return; }
-        if (def.kind === 'standard' || def.kind === 'termite') fieldsContainer.innerHTML = renderStandardFields(def, pkgid);
+        if (def.kind === 'standard') fieldsContainer.innerHTML = renderStandardFields(def, pkgid);
+        else if (def.kind === 'termite') fieldsContainer.innerHTML = renderTermiteFields(pkgid);
         else if (def.kind === 'trbs') fieldsContainer.innerHTML = renderTrbsFields(pkgid);
         else if (def.kind === 'mosquito_con') fieldsContainer.innerHTML = renderMosquitoFields(pkgid);
         else if (def.kind === 'tick_mosquito') fieldsContainer.innerHTML = renderTickMosquitoFields(pkgid);
@@ -730,6 +756,21 @@
                 devicesGroup.querySelector('.pkg-tick-devices').value = '';
                 devicesGroup.hidden = true;
             }
+        } else if (t.classList.contains('pkg-termite-plan')) {
+            const fieldsRoot = t.closest('.package-fields');
+            const monthlyFields = fieldsRoot.querySelector('.pkg-termite-monthly-fields');
+            const annualNote = fieldsRoot.querySelector('.pkg-termite-annual-note');
+            if (t.value === 'monthly') {
+                monthlyFields.hidden = false;
+                annualNote.hidden = true;
+            } else if (t.value === 'annual') {
+                monthlyFields.querySelectorAll('input, select').forEach((f) => { f.value = ''; });
+                monthlyFields.hidden = true;
+                annualNote.hidden = false;
+            } else {
+                monthlyFields.hidden = true;
+                annualNote.hidden = true;
+            }
         }
     });
 
@@ -749,7 +790,7 @@
         const numVal = (sel) => { const e = inst.querySelector(sel); return e ? (Number(e.value) || 0) : 0; };
         const selVal = (sel) => { const e = inst.querySelector(sel); return e ? e.value : ''; };
 
-        if (def.kind === 'standard' || def.kind === 'termite') {
+        if (def.kind === 'standard') {
             const initSel = selVal('.pkg-initial');
             const initial = initSel === 'other' ? numVal('.pkg-initial-other') : (Number(initSel) || 0);
             let monthly = 0;
@@ -757,8 +798,17 @@
                 const monSel = selVal('.pkg-monthly');
                 monthly = monSel === 'other' ? numVal('.pkg-monthly-other') : (Number(monSel) || 0);
             }
-            const fields = { initial, monthly };
-            if (def.kind === 'termite') fields.additionalStations = numVal('.pkg-termite-stations');
+            return { initial, monthly };
+        }
+        if (def.kind === 'termite') {
+            const plan = selVal('.pkg-termite-plan');
+            const fields = { plan, additionalStations: numVal('.pkg-termite-stations') };
+            if (plan === 'monthly') {
+                const initSel = selVal('.pkg-initial');
+                fields.initial = initSel === 'other' ? numVal('.pkg-initial-other') : (Number(initSel) || 0);
+                const monSel = selVal('.pkg-monthly');
+                fields.monthly = monSel === 'other' ? numVal('.pkg-monthly-other') : (Number(monSel) || 0);
+            }
             return fields;
         }
         if (def.kind === 'trbs') {
@@ -789,14 +839,32 @@
         const def = PACKAGES[pkgKey];
         if (!def) return null;
 
-        if (def.kind === 'standard' || def.kind === 'termite') {
+        if (def.kind === 'standard') {
             const initial = f.initial || 0;
             const monthly = def.monthlyOptions ? (f.monthly || 0) : 0;
-            const stationFee = def.kind === 'termite' ? (f.additionalStations || 0) * 75 : 0;
-            const revenue = initial + stationFee + (def.monthlyOptions ? monthly * 11 : 0);
-            const result = { package: def.label, initialPrice: initial, monthlyPrice: def.monthlyOptions ? monthly : null, revenue };
-            if (def.kind === 'termite') result.additionalStations = f.additionalStations || 0;
-            return result;
+            const revenue = initial + (def.monthlyOptions ? monthly * 11 : 0);
+            return { package: def.label, initialPrice: initial, monthlyPrice: def.monthlyOptions ? monthly : null, revenue };
+        }
+        if (def.kind === 'termite') {
+            const stationFee = (f.additionalStations || 0) * 75;
+            if (f.plan === 'annual') {
+                // Renewal ($420/yr) is next year's billing event, not this
+                // sale's — only the $1,200 signup counts toward revenue here.
+                return {
+                    package: def.label, termitePlan: 'annual',
+                    initialPrice: 1200, renewalPrice: 420,
+                    additionalStations: f.additionalStations || 0,
+                    revenue: 1200 + stationFee
+                };
+            }
+            const initial = f.initial || 0;
+            const monthly = f.monthly || 0;
+            return {
+                package: def.label, termitePlan: 'monthly',
+                initialPrice: initial, monthlyPrice: monthly,
+                additionalStations: f.additionalStations || 0,
+                revenue: initial + stationFee + monthly * 11
+            };
         }
         if (def.kind === 'trbs') {
             const wq = f.weightedQty || 0, wp = f.weightedPrice || 0;
@@ -888,7 +956,7 @@
         const subType = submissionType.value;
 
         subType === 'inbound_call' ? show(sectionInbound) : hideAndClear(sectionInbound);
-        subType === 'sale_submission' ? show(sectionSale) : hideAndClear(sectionSale);
+        subType === 'outbound_sale_submission' ? show(sectionSale) : hideAndClear(sectionSale);
 
         if (subType === 'inbound_call') {
             const ct = callType.value;
@@ -928,15 +996,8 @@
             }
         }
 
-        if (subType === 'sale_submission') {
-            const st = saleType.value;
-            st === 'outbound_call_sale' ? show(blockLeadSource) : hideAndClear(blockLeadSource);
-            if (st === 'inbound_call_sale' || st === 'outbound_call_sale') {
-                mountSaleDetails(anchorSaleSubmission);
-            } else if (saleDetailsBlock.parentElement === anchorSaleSubmission) {
-                unmountSaleDetails();
-                hide(anchorSaleSubmission);
-            }
+        if (subType === 'outbound_sale_submission') {
+            mountSaleDetails(anchorSaleSubmission);
         } else if (saleDetailsBlock.parentElement === anchorSaleSubmission) {
             unmountSaleDetails();
             hide(anchorSaleSubmission);
@@ -981,15 +1042,10 @@
             }
         }
 
-        if (submissionType.value === 'sale_submission') {
-            payload.saleType = saleType.value;
-            if (saleType.value === 'outbound_call_sale') {
-                payload.leadSource = leadSource.value;
-            }
-            if (saleType.value === 'inbound_call_sale' || saleType.value === 'outbound_call_sale') {
-                payload.saleDetails = buildSaleDetails();
-                payload.customerName = customerNameSale.value.trim();
-            }
+        if (submissionType.value === 'outbound_sale_submission') {
+            payload.leadSource = leadSource.value;
+            payload.saleDetails = buildSaleDetails();
+            payload.customerName = customerNameSale.value.trim();
         }
 
         return payload;
