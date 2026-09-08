@@ -29,7 +29,8 @@
         background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px; padding: 24px; margin-bottom: 20px;
     }
-    .add-row { display: flex; gap: 10px; margin-bottom: 8px; }
+    .add-row { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 8px; }
+    .add-row input[type="text"]:first-child { flex: 1 1 160px; }
     input {
         flex: 1; padding: 12px; border-radius: 8px; font-size: 14px; font-family: inherit;
         border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.15); color: #fff;
@@ -47,9 +48,19 @@
     .rep-row:last-child { border-bottom: none; }
     .rep-name { font-size: 15px; }
     .rep-name.inactive { color: rgba(248,250,252,0.4); text-decoration: line-through; }
+    .rep-left { display: flex; align-items: center; gap: 10px; }
+    .rep-pin {
+        font-family: 'Manrope', monospace; font-size: 12px; letter-spacing: 1px;
+        color: var(--color-mint-soft); background: rgba(0,0,0,0.2);
+        padding: 4px 9px; border-radius: 6px; cursor: pointer; border: 1px dashed transparent;
+    }
+    .rep-pin:hover { border-color: rgba(255,255,255,0.25); }
+    .rep-pin.pin-missing { color: rgba(248,250,252,0.4); font-style: italic; letter-spacing: normal; }
     .rep-actions button { padding: 6px 12px; font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; }
     .btn-toggle { background: rgba(255,255,255,0.1); margin-right: 6px; }
     .btn-toggle:hover { background: rgba(255,255,255,0.18); }
+    .btn-secondary { background: rgba(255,255,255,0.1); flex: 0 0 auto; }
+    .btn-secondary:hover { background: rgba(255,255,255,0.18); }
     .btn-delete { background: var(--danger); }
     .btn-delete:hover { background: #dc2626; }
     #status { margin-top: 12px; font-size: 13px; min-height: 18px; }
@@ -62,11 +73,13 @@
 
 <div id="page">
     <h1>Manage Reps</h1>
-    <p class="subtitle">Reps added here show up immediately in the call logger's dropdown. Marking a rep inactive hides them from new submissions without deleting their history.</p>
+    <p class="subtitle">Reps added here can log in immediately with their PIN. Marking a rep inactive hides them from new submissions without deleting their history. Click a rep's PIN below to change it.</p>
 
     <div class="form-section">
         <div class="add-row">
             <input type="text" id="new-rep-name" placeholder="New rep name">
+            <input type="text" id="new-rep-pin" placeholder="4-digit PIN" inputmode="numeric" maxlength="4" style="flex: 0 0 120px;">
+            <button type="button" class="btn-secondary" onclick="generatePin()">Generate</button>
             <button type="button" onclick="addRep()">Add</button>
         </div>
         <div id="status"></div>
@@ -83,15 +96,14 @@
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     // Same config as index.html - keep both in sync.
-   const firebaseConfig = {
-  apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
-  authDomain: "resteasycalltracking-b6441.firebaseapp.com",
-  projectId: "resteasycalltracking-b6441",
-  storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
-  messagingSenderId: "202833392651",
-  appId: "1:202833392651:web:eff40e11f8b89aab39430e",
-  measurementId: "G-2WC8RZW39P"
-};
+    const firebaseConfig = {
+        apiKey: "PASTE_YOUR_API_KEY",
+        authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+        projectId: "PASTE_YOUR_PROJECT_ID",
+        storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+        messagingSenderId: "PASTE_YOUR_SENDER_ID",
+        appId: "PASTE_YOUR_APP_ID"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
@@ -101,6 +113,13 @@
     const repList = document.getElementById('rep-list');
     const status = document.getElementById('status');
     const newRepInput = document.getElementById('new-rep-name');
+    const newPinInput = document.getElementById('new-rep-pin');
+
+    // Escapes a value for safe interior use inside an HTML attribute
+    // built via string interpolation (onclick="...('${...}')").
+    function attrSafe(str) {
+        return String(str ?? '').replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+    }
 
     async function loadReps() {
         const q = query(collection(db, 'reps'), orderBy('name'));
@@ -112,26 +131,96 @@
         repList.innerHTML = '';
         snap.forEach((docSnap) => {
             const data = docSnap.data();
+            const pinLabel = data.pin ? data.pin : 'Set PIN';
             const row = document.createElement('div');
             row.className = 'rep-row';
             row.innerHTML = `
-                <span class="rep-name ${data.active === false ? 'inactive' : ''}">${data.name}</span>
+                <span class="rep-left">
+                    <span class="rep-name ${data.active === false ? 'inactive' : ''}">${data.name}</span>
+                    <span class="rep-pin ${data.pin ? '' : 'pin-missing'}" title="Click to change PIN"
+                        onclick="window.__editPin('${docSnap.id}', '${attrSafe(data.name)}', '${attrSafe(data.pin || '')}')">${pinLabel}</span>
+                </span>
                 <span class="rep-actions">
                     <button class="btn-toggle" onclick="window.__toggleRep('${docSnap.id}', ${data.active === false})">${data.active === false ? 'Reactivate' : 'Deactivate'}</button>
-                    <button class="btn-delete" onclick="window.__deleteRep('${docSnap.id}', '${data.name}')">Delete</button>
+                    <button class="btn-delete" onclick="window.__deleteRep('${docSnap.id}', '${attrSafe(data.name)}')">Delete</button>
                 </span>
             `;
             repList.appendChild(row);
         });
     }
 
+    // Returns the set of PINs currently in use (across active AND inactive
+    // reps, so a deactivated rep's old PIN can't be accidentally handed
+    // to someone else while their history still references it).
+    async function pinsInUse(excludeId) {
+        const snap = await getDocs(collection(db, 'reps'));
+        const map = new Map(); // pin -> name
+        snap.forEach((d) => {
+            if (d.id === excludeId) return;
+            const p = d.data().pin;
+            if (p) map.set(String(p), d.data().name);
+        });
+        return map;
+    }
+
+    window.generatePin = async function () {
+        const used = await pinsInUse(null);
+        let candidate;
+        do {
+            candidate = String(Math.floor(1000 + Math.random() * 9000));
+        } while (used.has(candidate));
+        newPinInput.value = candidate;
+    };
+
+    window.__editPin = async function (id, name, currentPin) {
+        const next = prompt(`4-digit PIN for ${name}:`, currentPin || '');
+        if (next === null) return; // cancelled
+        const trimmed = next.trim();
+        if (!/^\d{4}$/.test(trimmed)) {
+            alert('PIN must be exactly 4 digits.');
+            return;
+        }
+        const used = await pinsInUse(id);
+        if (used.has(trimmed)) {
+            alert(`That PIN is already assigned to ${used.get(trimmed)}. Choose a different one.`);
+            return;
+        }
+        try {
+            await updateDoc(doc(db, 'reps', id), { pin: trimmed });
+            status.textContent = `PIN updated for ${name}.`;
+            status.className = 'success';
+            loadReps();
+        } catch (err) {
+            console.error(err);
+            status.textContent = 'Could not update PIN — check Firebase config.';
+            status.className = 'error';
+        }
+    };
+
     window.addRep = async function () {
         const name = newRepInput.value.trim();
+        const pin = newPinInput.value.trim();
         if (!name) return;
+
+        if (pin && !/^\d{4}$/.test(pin)) {
+            status.textContent = 'PIN must be exactly 4 digits — or leave it blank and set one later.';
+            status.className = 'error';
+            return;
+        }
+
         try {
-            await addDoc(collection(db, 'reps'), { name, active: true });
+            if (pin) {
+                const used = await pinsInUse(null);
+                if (used.has(pin)) {
+                    status.textContent = `PIN ${pin} is already assigned to ${used.get(pin)}.`;
+                    status.className = 'error';
+                    return;
+                }
+            }
+            await addDoc(collection(db, 'reps'), { name, active: true, pin: pin || null });
             newRepInput.value = '';
-            status.textContent = `${name} added.`;
+            newPinInput.value = '';
+            status.textContent = pin ? `${name} added with PIN ${pin}.` : `${name} added — no PIN set yet, click "Set PIN" below to add one.`;
             status.className = 'success';
             loadReps();
         } catch (err) {
