@@ -95,20 +95,27 @@
     import { getFirestore, collection, addDoc, doc, updateDoc, deleteDoc, getDocs, query, orderBy } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-    // Same config as index.html - keep both in sync.
-  const firebaseConfig = {
-  apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
-  authDomain: "resteasycalltracking.firebaseapp.com",
-  projectId: "resteasycalltracking",
-  storageBucket: "resteasycalltracking.firebasestorage.app",
-  messagingSenderId: "744235430121",
-  appId: "1:744235430121:web:aa650ff3b7a3b570844078",
-  measurementId: "G-8VGJSMTXP6"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
+        authDomain: "resteasycalltracking.firebaseapp.com",
+        projectId: "resteasycalltracking",
+        storageBucket: "resteasycalltracking.firebasestorage.app",
+        messagingSenderId: "744235430121",
+        appId: "1:744235430121:web:aa650ff3b7a3b570844078",
+        measurementId: "G-8VGJSMTXP6"
+    };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
-    signInAnonymously(auth).catch((err) => console.error("Auth failed:", err));
+
+    // Awaited before every Firestore call below — signing in is async, and
+    // querying/writing before it settles can produce a spurious "Missing or
+    // insufficient permissions" error even when the rules are correct.
+    const authReady = signInAnonymously(auth).catch((err) => {
+        console.error('Anonymous sign-in failed:', err);
+        throw err;
+    });
 
     const repList = document.getElementById('rep-list');
     const status = document.getElementById('status');
@@ -122,6 +129,7 @@
     }
 
     async function loadReps() {
+        await authReady;
         const q = query(collection(db, 'reps'), orderBy('name'));
         const snap = await getDocs(q);
         if (snap.empty) {
@@ -153,6 +161,7 @@
     // reps, so a deactivated rep's old PIN can't be accidentally handed
     // to someone else while their history still references it).
     async function pinsInUse(excludeId) {
+        await authReady;
         const snap = await getDocs(collection(db, 'reps'));
         const map = new Map(); // pin -> name
         snap.forEach((d) => {
@@ -231,17 +240,22 @@
     };
 
     window.__toggleRep = async function (id, reactivate) {
+        await authReady;
         await updateDoc(doc(db, 'reps', id), { active: reactivate });
         loadReps();
     };
 
     window.__deleteRep = async function (id, name) {
         if (!confirm(`Delete ${name}? This only removes them from the rep list — their past submissions are untouched.`)) return;
+        await authReady;
         await deleteDoc(doc(db, 'reps', id));
         loadReps();
     };
 
-    loadReps();
+    loadReps().catch((err) => {
+        console.error('Could not load reps:', err);
+        repList.innerHTML = '<div class="empty-note" style="color:var(--danger);">Could not load reps — check that Anonymous Authentication is enabled and Firestore rules are published.</div>';
+    });
 </script>
 
 </body>
