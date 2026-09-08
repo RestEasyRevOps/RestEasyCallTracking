@@ -190,24 +190,28 @@
     import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
-   const firebaseConfig = {
-  apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
-  authDomain: "resteasycalltracking.firebaseapp.com",
-  projectId: "resteasycalltracking",
-  storageBucket: "resteasycalltracking.firebasestorage.app",
-  messagingSenderId: "744235430121",
-  appId: "1:744235430121:web:aa650ff3b7a3b570844078",
-  measurementId: "G-8VGJSMTXP6"
-};
+    const firebaseConfig = {
+        apiKey: "AIzaSyDgIjCM2kFe4VSpniRNHXJTvNJDOo7tjgQ",
+        authDomain: "resteasycalltracking.firebaseapp.com",
+        projectId: "resteasycalltracking",
+        storageBucket: "resteasycalltracking.firebasestorage.app",
+        messagingSenderId: "744235430121",
+        appId: "1:744235430121:web:aa650ff3b7a3b570844078",
+        measurementId: "G-8VGJSMTXP6"
+    };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Anonymous auth — not a real login, just a lightweight way to keep
-    // random internet traffic from writing to the database. Every real
-    // browser session gets a token; nothing that isn't this page can write.
-    signInAnonymously(auth).catch((err) => console.error("Auth failed:", err));
+    // Exposed so the logic script below can WAIT for sign-in to actually
+    // settle before touching Firestore. Signing in is async — querying
+    // before it resolves causes a spurious "Missing or insufficient
+    // permissions" error even when the rules and config are both correct.
+    window.__authReady = signInAnonymously(auth).catch((err) => {
+        console.error('Anonymous sign-in failed:', err);
+        throw err;
+    });
 
     window.__db = db;
     window.__fsFns = { collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp };
@@ -724,21 +728,16 @@
     async function loadReps() {
         const { collection, getDocs, query, orderBy } = window.__fsFns;
         const db = window.__db;
-        try {
-            const q = query(collection(db, 'reps'), orderBy('name'));
-            const snap = await getDocs(q);
-            repsByPin = {};
-            snap.forEach((doc) => {
-                const data = doc.data();
-                if (data.active === false) return;
-                if (!data.pin) return;
-                repsByPin[String(data.pin)] = data.name;
-            });
-        } catch (err) {
-            console.error('Could not load reps:', err);
-            gateStatus.textContent = 'Could not load rep list — check Firebase config.';
-            gateStatus.className = 'helper-text pin-error';
-        }
+        await window.__authReady; // don't query until sign-in has actually settled
+        const q = query(collection(db, 'reps'), orderBy('name'));
+        const snap = await getDocs(q);
+        repsByPin = {};
+        snap.forEach((doc) => {
+            const data = doc.data();
+            if (data.active === false) return;
+            if (!data.pin) return;
+            repsByPin[String(data.pin)] = data.name;
+        });
     }
 
     // ---- Login gate ----------------------------------------------------------
@@ -795,7 +794,16 @@
     });
 
     async function initLogin() {
-        await loadReps();
+        try {
+            await loadReps();
+        } catch (err) {
+            console.error('Could not load reps:', err);
+            loggerApp.hidden = true;
+            loginGate.hidden = false;
+            gateStatus.textContent = 'Could not load the rep list — check Firebase Authentication (Anonymous must be enabled) and that Firestore rules are published.';
+            gateStatus.className = 'helper-text pin-error';
+            return;
+        }
         const stored = sessionStorage.getItem(SESSION_KEY);
         if (stored && Object.values(repsByPin).includes(stored)) {
             showApp(stored);
