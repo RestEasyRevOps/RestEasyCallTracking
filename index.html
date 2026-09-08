@@ -7,10 +7,6 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 <style>
-    /* ==========================================================
-       Design tokens — lifted directly from the uploaded cockpit
-       (enterprisecockpit-setter.html) so this form matches it.
-       ========================================================== */
     :root {
         --color-bg-dark: #223129;
         --color-box-translucent: rgba(255, 255, 255, 0.05);
@@ -41,27 +37,1127 @@
 
     h1, h2 { font-family: 'Fraunces', serif; margin: 0; }
 
-    #page {
-        width: 100%;
-        max-width: 640px;
+    #page { width: 100%; max-width: 640px; }
+
+    header { margin-bottom: 28px; }
+    header h1 { font-size: 26px; font-weight: 500; letter-spacing: -0.01em; color: var(--text-on-dark); }
+    header p { margin: 8px 0 0; font-size: 13px; color: var(--color-mint-soft); }
+
+    .form-section {
+        background: var(--color-box-translucent);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 12px;
+        padding: 24px;
+        margin-bottom: 20px;
     }
 
-    header {
-        margin-bottom: 28px;
-    }
-
-    header h1 {
-        font-size: 26px;
+    .form-section h2 {
+        font-size: 15px;
         font-weight: 500;
-        letter-spacing: -0.01em;
-        color: var(--text-on-dark);
+        color: var(--color-mint-soft);
+        border-bottom: 2px solid rgba(255,255,255,0.1);
+        padding-bottom: 10px;
+        margin-bottom: 18px;
     }
 
-    header p {
-        margin: 8px 0 0;
+    .form-group { margin-bottom: 18px; }
+    .form-group:last-child { margin-bottom: 0; }
+
+    .grid-2 { display: flex; gap: 15px; margin-bottom: 18px; }
+    .grid-2 .form-group { flex: 1; margin-bottom: 0; }
+
+    label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 8px;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: var(--color-mint-soft);
+        letter-spacing: 0.5px;
+    }
+
+    label .req { color: var(--gold-accent); margin-left: 2px; }
+
+    input, select, textarea {
+        width: 100%;
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 14px;
+        font-family: inherit;
+        border: 1px solid rgba(255,255,255,0.2);
+        background: rgba(0,0,0,0.15);
+        color: #ffffff;
+        transition: all 0.15s;
+    }
+
+    select { cursor: pointer; }
+    input::placeholder, textarea::placeholder { color: rgba(255,255,255,0.35); }
+
+    input:focus, select:focus, textarea:focus {
+        border-color: var(--color-sage-accent);
+        outline: none;
+        box-shadow: 0 0 0 3px var(--focus-glow);
+    }
+
+    .subfield {
+        border-left: 2px solid var(--color-sage-accent);
+        padding-left: 16px;
+        margin-top: 4px;
+        margin-bottom: 18px;
+    }
+    .subfield[hidden] { display: none; }
+
+    .helper-text {
+        font-size: 12px;
+        color: rgba(248,250,252,0.6);
+        margin: -8px 0 16px;
+    }
+
+    .note-box {
         font-size: 13px;
         color: var(--color-mint-soft);
+        background: rgba(0,0,0,0.15);
+        border: 1px dashed rgba(255,255,255,0.2);
+        border-radius: 8px;
+        padding: 12px 14px;
     }
+
+    .btn-primary {
+        width: 100%;
+        background: var(--color-sage-accent);
+        color: white;
+        border: none;
+        padding: 16px;
+        font-size: 15px;
+        font-weight: 700;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: all 0.2s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+    }
+    .btn-primary:hover { background: #3d7a5c; transform: translateY(-1px); }
+    .btn-primary:active { transform: translateY(1px); }
+
+    #submit-status { margin-top: 12px; font-size: 13px; text-align: center; min-height: 18px; }
+    #submit-status.error { color: var(--danger); }
+    #submit-status.success { color: var(--color-mint-soft); }
+
+    .pin-ok { color: var(--color-mint-soft); font-weight: 700; }
+    .pin-error { color: var(--danger); font-weight: 600; }
+
+    #login-gate { margin-top: 10vh; }
+    #logger-app header a:hover { color: var(--text-on-dark); }
+
+    /* ---- Multi-package sale details ---- */
+    .package-instance {
+        background: rgba(0,0,0,0.15);
+        border: 1px solid rgba(255,255,255,0.1);
+        border-radius: 10px;
+        padding: 16px;
+        margin-bottom: 14px;
+    }
+    .package-instance-header {
+        display: flex; justify-content: space-between; align-items: center;
+        margin-bottom: 14px;
+    }
+    .package-instance-title {
+        font-size: 11px; font-weight: 800; text-transform: uppercase; letter-spacing: 0.6px;
+        color: var(--color-mint-soft);
+    }
+    .remove-package-link {
+        font-size: 11px; color: var(--danger); text-decoration: underline; cursor: pointer; background: none; border: none; font-family: inherit; padding: 0;
+    }
+    .btn-add-package {
+        background: transparent;
+        border: 1px dashed var(--color-sage-accent);
+        color: var(--color-mint-soft);
+        padding: 12px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        width: 100%;
+        text-transform: none;
+        letter-spacing: normal;
+        margin-bottom: 8px;
+    }
+    .btn-add-package:hover { background: rgba(76,145,112,0.12); }
+    .field-note { font-size: 11px; color: rgba(248,250,252,0.5); margin: 6px 0 0; }
+</style>
+
+<!-- =====================================================================
+     FIREBASE SETUP
+     ===================================================================== -->
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js";
+    import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
+
+    const firebaseConfig = {
+        apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
+        authDomain: "resteasycalltracking-b6441.firebaseapp.com",
+        projectId: "resteasycalltracking-b6441",
+        storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
+        messagingSenderId: "202833392651",
+        appId: "1:202833392651:web:eff40e11f8b89aab39430e",
+        measurementId: "G-2WC8RZW39P"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+    const auth = getAuth(app);
+
+    window.__authReady = signInAnonymously(auth).catch((err) => {
+        console.error('Anonymous sign-in failed:', err);
+        throw err;
+    });
+
+    window.__db = db;
+    window.__fsFns = { collection, addDoc, getDocs, query, orderBy, onSnapshot, serverTimestamp };
+</script>
+
+</head>
+<body>
+
+<div id="page">
+
+    <!-- ============ LOGIN GATE ============ -->
+    <div id="login-gate">
+        <header style="text-align:center;">
+            <h1>Call Logger</h1>
+            <p>Enter your PIN to get started.</p>
+        </header>
+        <div class="form-section" style="max-width:280px; margin:0 auto;">
+            <div class="form-group" style="margin-bottom:0;">
+                <label for="gatePin" style="text-align:center;">Your PIN<span class="req">*</span></label>
+                <input type="password" id="gatePin" inputmode="numeric" pattern="[0-9]*" maxlength="4"
+                    autocomplete="off" autofocus placeholder="••••"
+                    style="text-align:center; font-size:24px; letter-spacing:10px;">
+                <p class="helper-text" id="gate-status" style="text-align:center;">Enter your 4-digit PIN.</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="logger-app" hidden>
+        <header style="display:flex; justify-content:space-between; align-items:flex-start; gap:16px;">
+            <div>
+                <h1>Call Logger</h1>
+                <p>Fields are dynamic based on your selections below.</p>
+            </div>
+            <div style="text-align:right; font-size:12px; color:var(--color-mint-soft); white-space:nowrap;">
+                Logged in as <strong id="logged-in-name"></strong><br>
+                <a href="#" id="switch-user-link" style="color:var(--color-mint-soft); text-decoration:underline; font-size:11px;">Not you? Switch user</a>
+            </div>
+        </header>
+
+        <form id="logger-form" novalidate>
+            <input type="hidden" id="salesRep" value="">
+
+            <!-- ============ ALWAYS-PRESENT FIELDS ============ -->
+            <div class="form-section">
+                <h2>Basics</h2>
+                <div class="form-group">
+                    <label for="customerPhone">Customer Phone Number<span class="req">*</span></label>
+                    <input type="tel" id="customerPhone" class="logic-field" placeholder="(801) 555-0199" required>
+                    <p class="field-note">Digits only — pasted formatting is stripped automatically.</p>
+                </div>
+
+                <div class="form-group">
+                    <label for="submissionType">Submission Type<span class="req">*</span></label>
+                    <select id="submissionType" class="logic-field" required>
+                        <option value="">-- Select Type --</option>
+                        <option value="inbound_call">Inbound Call</option>
+                        <option value="sale_submission">Sale Submission</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- ============ INBOUND CALL PATH ============ -->
+            <div class="form-section subfield" id="section-inbound-call" hidden>
+                <h2>Inbound Call Details</h2>
+
+                <div class="form-group">
+                    <label for="callType">Call Type<span class="req">*</span></label>
+                    <select id="callType" class="logic-field" required>
+                        <option value="">-- Select Call Type --</option>
+                        <option value="customer_service">Customer Service</option>
+                        <option value="retention">Retention</option>
+                        <option value="inbound_sales">Inbound Sales Opportunity</option>
+                        <option value="commercial">Commercial Call</option>
+                    </select>
+                </div>
+
+                <div class="subfield" id="block-customer-service" hidden>
+                    <div class="note-box">No additional info needed — ready to submit.</div>
+                </div>
+
+                <div class="subfield" id="block-commercial" hidden>
+                    <div class="note-box">No additional info needed yet — commercial call details will be added later. Ready to submit.</div>
+                </div>
+
+                <!-- Retention -->
+                <div class="subfield" id="block-retention" hidden>
+                    <div class="form-group">
+                        <label for="customerNameRetention">Customer Name<span class="req">*</span></label>
+                        <input type="text" id="customerNameRetention" class="logic-field" placeholder="Full name" required>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="retentionOutcome">Outcome<span class="req">*</span></label>
+                        <select id="retentionOutcome" class="logic-field" required>
+                            <option value="">-- Select Outcome --</option>
+                            <option value="saved">Saved</option>
+                            <option value="cancelled">Cancelled</option>
+                            <option value="transferred_jake">Transferred to Jake</option>
+                        </select>
+                    </div>
+
+                    <div class="subfield" id="block-retention-cancelled" hidden>
+                        <div class="form-group">
+                            <label for="cancelReason">Cancellation Reason<span class="req">*</span></label>
+                            <select id="cancelReason" class="logic-field" required></select>
+                        </div>
+                    </div>
+
+                    <div class="subfield" id="block-retention-saved" hidden>
+                        <div class="form-group">
+                            <label for="discountAmount">How much money was discounted?<span class="req">*</span></label>
+                            <input type="text" id="discountAmount" class="logic-field" inputmode="numeric" placeholder="$0" required>
+                        </div>
+                    </div>
+
+                    <div class="subfield" id="block-retention-transferred" hidden>
+                        <div class="form-group">
+                            <label for="transferReason">Reason<span class="req">*</span></label>
+                            <select id="transferReason" class="logic-field" required></select>
+                        </div>
+                        <div class="form-group">
+                            <label for="customerAccountNumber">Customer Account Number<span class="req">*</span></label>
+                            <input type="text" id="customerAccountNumber" class="logic-field" inputmode="numeric" placeholder="Digits only" required>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Inbound Sales Opportunity -->
+                <div class="subfield" id="block-inbound-sales" hidden>
+                    <div class="form-group">
+                        <label for="salesOutcome">Sold or Not Sold?<span class="req">*</span></label>
+                        <select id="salesOutcome" class="logic-field" required>
+                            <option value="">-- Select Outcome --</option>
+                            <option value="sold">Sold</option>
+                            <option value="not_sold">Not Sold</option>
+                        </select>
+                    </div>
+
+                    <div class="subfield" id="block-not-sold" hidden>
+                        <div class="form-group">
+                            <label for="notSoldReason">Reason Not Sold<span class="req">*</span></label>
+                            <select id="notSoldReason" class="logic-field" required>
+                                <option value="">-- Select Reason --</option>
+                                <option value="Spouse Objection">Spouse Objection</option>
+                                <option value="Too Expensive">Too Expensive</option>
+                                <option value="Not the decision maker">Not the decision maker</option>
+                                <option value="Didn't want full agreement">Didn't want full agreement</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+                        <div class="subfield" id="block-not-sold-other" hidden>
+                            <div class="form-group">
+                                <label for="otherReasonText">Please explain<span class="req">*</span></label>
+                                <textarea id="otherReasonText" class="logic-field" rows="2" placeholder="What happened?" required></textarea>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="anchor-inbound-sold" hidden></div>
+                </div>
+            </div>
+
+            <!-- ============ SALE SUBMISSION PATH ============ -->
+            <div class="form-section subfield" id="section-sale-submission" hidden>
+                <h2>Sale Submission Details</h2>
+
+                <div class="form-group">
+                    <label for="saleType">Sale Type<span class="req">*</span></label>
+                    <select id="saleType" class="logic-field" required>
+                        <option value="">-- Select Sale Type --</option>
+                        <option value="inbound_call_sale">Inbound Call Sale</option>
+                        <option value="outbound_call_sale">Outbound Call Sale</option>
+                    </select>
+                </div>
+
+                <div class="subfield" id="block-lead-source" hidden>
+                    <div class="form-group">
+                        <label for="leadSource">Lead Source<span class="req">*</span></label>
+                        <select id="leadSource" class="logic-field" required>
+                            <option value="">-- Select Source --</option>
+                            <option value="Marketing Lead">Marketing Lead</option>
+                            <option value="AI Lead">AI Lead</option>
+                            <option value="Technician Lead">Technician Lead</option>
+                            <option value="Follow Up/Re-hash">Follow Up/Re-hash</option>
+                            <option value="Other">Other</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="anchor-sale-submission" hidden></div>
+            </div>
+
+            <!-- ============ SHARED "SALE DETAILS" BLOCK ============ -->
+            <div class="subfield" id="sale-details-block" hidden>
+                <div class="form-group">
+                    <label for="customerNameSale">Customer Name<span class="req">*</span></label>
+                    <input type="text" id="customerNameSale" class="logic-field" placeholder="Full name" required>
+                </div>
+
+                <div id="package-instances"></div>
+                <button type="button" class="btn-add-package" id="add-package-btn">+ Add Another Package</button>
+
+                <div class="form-group" style="margin-top:18px;">
+                    <label for="paymentMethod">Payment Method<span class="req">*</span></label>
+                    <select id="paymentMethod" class="logic-field" required>
+                        <option value="">-- Select Method --</option>
+                        <option value="None">None</option>
+                        <option value="Credit Card">Credit Card</option>
+                    </select>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-primary">Submit</button>
+            <div id="submit-status"></div>
+        </form>
+    </div><!-- /logger-app -->
+</div><!-- /page -->
+
+<script type="module">
+(function () {
+    'use strict';
+
+    const el = (id) => document.getElementById(id);
+
+    // ---- Element handles -------------------------------------------------
+    const customerPhone   = el('customerPhone');
+    const salesRep        = el('salesRep');
+    const submissionType  = el('submissionType');
+
+    const loginGate       = el('login-gate');
+    const loggerApp       = el('logger-app');
+    const gatePin         = el('gatePin');
+    const gateStatus      = el('gate-status');
+    const loggedInName    = el('logged-in-name');
+    const switchUserLink  = el('switch-user-link');
+
+    const sectionInbound  = el('section-inbound-call');
+    const sectionSale     = el('section-sale-submission');
+
+    const callType        = el('callType');
+    const blockCS         = el('block-customer-service');
+    const blockCommercial = el('block-commercial');
+    const blockRetention  = el('block-retention');
+    const blockInboundSales = el('block-inbound-sales');
+
+    const customerNameRetention = el('customerNameRetention');
+    const retentionOutcome   = el('retentionOutcome');
+    const blockCancelled     = el('block-retention-cancelled');
+    const cancelReason       = el('cancelReason');
+    const blockSaved         = el('block-retention-saved');
+    const discountAmount     = el('discountAmount');
+    const blockTransferred   = el('block-retention-transferred');
+    const transferReason     = el('transferReason');
+    const customerAccountNumber = el('customerAccountNumber');
+
+    const salesOutcome       = el('salesOutcome');
+    const blockNotSold       = el('block-not-sold');
+    const notSoldReason      = el('notSoldReason');
+    const blockNotSoldOther  = el('block-not-sold-other');
+    const otherReasonText    = el('otherReasonText');
+    const anchorInboundSold  = el('anchor-inbound-sold');
+
+    const saleType           = el('saleType');
+    const blockLeadSource    = el('block-lead-source');
+    const leadSource         = el('leadSource');
+    const anchorSaleSubmission = el('anchor-sale-submission');
+
+    const saleDetailsBlock   = el('sale-details-block');
+    const customerNameSale   = el('customerNameSale');
+    const packageInstances   = el('package-instances');
+    const addPackageBtn      = el('add-package-btn');
+    const paymentMethod      = el('paymentMethod');
+
+    const submitStatus       = el('submit-status');
+    const form                = el('logger-form');
+
+    // =========================================================================
+    // CANCELLATION / TRANSFER REASON CODES — one source of truth, injected
+    // into both the Cancelled and Transferred-to-Jake reason dropdowns.
+    // =========================================================================
+    const CANCEL_REASONS = [
+        { code: 'COMPETITOR', desc: '' },
+        { code: 'CLOSED', desc: 'Moved/Dead/Closed' },
+        { code: 'UNRESPONSE', desc: "Can't reach the customer/No contact for payment/service" },
+        { code: 'SERVICE', desc: 'Customer is unhappy, bad experience, not seeing results' },
+        { code: 'Z DATAUPDA', desc: 'Data Update – no action' },
+        { code: 'UPGRADE', desc: 'Value increased' },
+        { code: 'DOWNGRADE', desc: 'Value decreased' },
+        { code: 'TRANSFER', desc: 'Transfer services to new acct - same price & service' },
+        { code: 'OTHER', desc: 'All other reasons (floater IF needed) — try not to use' },
+        { code: 'PRICE', desc: 'Canceled due to price' },
+        { code: 'VALUENLNS', desc: 'No longer needs service' },
+        { code: 'ACCESS', desc: 'Scheduling/Access issues' },
+        { code: 'BILLINGISS', desc: 'Chargeback, Billing disputes, Contract confusion' },
+        { code: 'REVERSEFP', desc: 'Reversed from annuity to one-time' }
+    ];
+
+    function populateReasonSelect(selectEl) {
+        selectEl.innerHTML = '<option value="">-- Select Reason --</option>' +
+            CANCEL_REASONS.map((r) => {
+                const label = r.desc ? `${r.code} — ${r.desc}` : r.code;
+                return `<option value="${r.code}">${label}</option>`;
+            }).join('');
+    }
+    populateReasonSelect(cancelReason);
+    populateReasonSelect(transferReason);
+
+    // =========================================================================
+    // PACKAGE DEFINITIONS
+    // =========================================================================
+    const PACKAGES = {
+        ultimate: { label: 'Ultimate', kind: 'standard', initialOptions: [225, 175], monthlyOptions: [66, 55] },
+        new_start_residential: { label: 'New Start Residential', kind: 'standard', initialOptions: [475, 350], monthlyOptions: [125] },
+        inspection: { label: 'Inspection', kind: 'standard', initialOptions: [150, 0], monthlyOptions: null },
+        one_time: { label: 'One-Time', kind: 'standard', initialOptions: [450, 350], monthlyOptions: null },
+        termite: { label: 'Termite', kind: 'termite', initialOptions: [450], monthlyOptions: [35] },
+        trbs: { label: 'TRBS', kind: 'trbs' },
+        mosquito_con: { label: 'Mosquito-Con (Add-On)', kind: 'mosquito_con' },
+        tick_mosquito: { label: 'Tick & Mosquito', kind: 'tick_mosquito' }
+    };
+
+    let nextPkgId = 0;
+
+    function renderStandardFields(def, pkgid) {
+        const initialOpts = def.initialOptions.map((v) => `<option value="${v}">$${v}</option>`).join('');
+        let html = `<div class="grid-2">
+            <div class="form-group">
+                <label>Initial Price<span class="req">*</span></label>
+                <select class="logic-field pkg-initial" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select Price --</option>
+                    ${initialOpts}
+                    <option value="other">Other (enter amount)</option>
+                </select>
+                <input type="number" class="pkg-initial-other" data-pkgid="${pkgid}" placeholder="Enter amount" min="0" step="0.01" aria-label="Initial Price (Other Amount)" required hidden>
+            </div>`;
+        if (def.monthlyOptions) {
+            const monthlyOpts = def.monthlyOptions.map((v) => `<option value="${v}">$${v}</option>`).join('');
+            html += `<div class="form-group">
+                <label>Monthly Price<span class="req">*</span></label>
+                <select class="logic-field pkg-monthly" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select Price --</option>
+                    ${monthlyOpts}
+                    <option value="other">Other (enter amount)</option>
+                </select>
+                <input type="number" class="pkg-monthly-other" data-pkgid="${pkgid}" placeholder="Enter amount" min="0" step="0.01" aria-label="Monthly Price (Other Amount)" required hidden>
+            </div>`;
+        } else {
+            html += `<div class="form-group"><p class="helper-text" style="margin-top:30px;">One-time — no recurring monthly charge.</p></div>`;
+        }
+        html += `</div>`;
+        if (def.kind === 'termite') {
+            html += `<div class="form-group">
+                <label>Additional Stations (beyond 10)</label>
+                <input type="number" class="pkg-termite-stations" data-pkgid="${pkgid}" min="0" step="1" value="0" required>
+                <p class="field-note">$75 each. 11+ stations — consult Sales Manager first.</p>
+            </div>`;
+        }
+        return html;
+    }
+
+    function renderTrbsFields(pkgid) {
+        return `
+            <div class="grid-2">
+                <div class="form-group">
+                    <label>Weighted Stations</label>
+                    <input type="number" class="pkg-trbs-weighted" data-pkgid="${pkgid}" min="0" step="1" value="0">
+                    <p class="field-note">$75 first station, $45 each additional.</p>
+                </div>
+                <div class="form-group">
+                    <label>Landscape Stations</label>
+                    <input type="number" class="pkg-trbs-landscape" data-pkgid="${pkgid}" min="0" step="1" value="0">
+                    <p class="field-note">$75 first station, $55 each additional.</p>
+                </div>
+            </div>
+            <div class="form-group">
+                <label>Ongoing Monitoring<span class="req">*</span></label>
+                <select class="logic-field pkg-trbs-monitoring" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select --</option>
+                    <option value="included">Included with Ultimate (no extra cost)</option>
+                    <option value="monthly">Billed Monthly</option>
+                </select>
+                <input type="number" class="pkg-trbs-monitoring-amount" data-pkgid="${pkgid}" placeholder="Typically $75–$95" min="0" step="0.01" aria-label="TRBS Monthly Monitoring Amount" required hidden>
+            </div>
+            <p class="helper-text">Structure pending confirmation — best guess from the team, not yet finalized.</p>
+        `;
+    }
+
+    function renderMosquitoFields(pkgid) {
+        return `
+            <div class="form-group">
+                <label>Total Devices<span class="req">*</span></label>
+                <input type="number" class="logic-field pkg-mosquito-devices" data-pkgid="${pkgid}" min="2" step="1" value="2" required>
+                <p class="field-note">Base includes 2 devices ($100 initial / $10 month). Each additional device: +$50 initial / +$5 month.</p>
+            </div>
+        `;
+    }
+
+    function renderTickMosquitoFields(pkgid) {
+        return `
+            <div class="form-group">
+                <label>Plan Tier<span class="req">*</span></label>
+                <select class="logic-field pkg-tick-tier" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select Tier --</option>
+                    <option value="one_time">One-Time (up to 2 acres) — $350</option>
+                    <option value="monthly_1acre">Monthly, up to 1 Acre — $225 initial / $125 mo</option>
+                    <option value="monthly_2acre">Monthly, up to 2 Acres — $265 initial / $165 mo</option>
+                    <option value="monthly_3acre">Monthly, up to 3 Acres — Custom / Free Estimate</option>
+                </select>
+            </div>
+            <div class="grid-2 pkg-tick-custom" data-pkgid="${pkgid}" hidden>
+                <div class="form-group">
+                    <label>Custom Initial Price<span class="req">*</span></label>
+                    <input type="number" class="logic-field pkg-tick-custom-initial" data-pkgid="${pkgid}" min="0" step="0.01" required>
+                </div>
+                <div class="form-group">
+                    <label>Custom Monthly Price<span class="req">*</span></label>
+                    <input type="number" class="logic-field pkg-tick-custom-monthly" data-pkgid="${pkgid}" min="0" step="0.01" required>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderPackageFields(pkgid) {
+        const wrapper = packageInstances.querySelector(`.package-instance[data-pkgid="${pkgid}"]`);
+        if (!wrapper) return;
+        const pkgKey = wrapper.querySelector('.pkg-type').value;
+        const fieldsContainer = wrapper.querySelector('.package-fields');
+        const def = PACKAGES[pkgKey];
+        if (!def) { fieldsContainer.innerHTML = ''; return; }
+        if (def.kind === 'standard' || def.kind === 'termite') fieldsContainer.innerHTML = renderStandardFields(def, pkgid);
+        else if (def.kind === 'trbs') fieldsContainer.innerHTML = renderTrbsFields(pkgid);
+        else if (def.kind === 'mosquito_con') fieldsContainer.innerHTML = renderMosquitoFields(pkgid);
+        else if (def.kind === 'tick_mosquito') fieldsContainer.innerHTML = renderTickMosquitoFields(pkgid);
+    }
+
+    function createPackageInstance(pkgid) {
+        const wrapper = document.createElement('div');
+        wrapper.className = 'package-instance';
+        wrapper.dataset.pkgid = pkgid;
+        const options = Object.entries(PACKAGES).map(([key, def]) => `<option value="${key}">${def.label}</option>`).join('');
+        wrapper.innerHTML = `
+            <div class="package-instance-header">
+                <span class="package-instance-title">Package</span>
+                <button type="button" class="remove-package-link" data-pkgid="${pkgid}" hidden>Remove</button>
+            </div>
+            <div class="form-group">
+                <label>Package<span class="req">*</span></label>
+                <select class="logic-field pkg-type" data-pkgid="${pkgid}" required>
+                    <option value="">-- Select Package --</option>
+                    ${options}
+                </select>
+            </div>
+            <div class="package-fields" data-pkgid="${pkgid}"></div>
+        `;
+        return wrapper;
+    }
+
+    function updateRemoveLinkVisibility() {
+        const instances = packageInstances.querySelectorAll('.package-instance');
+        instances.forEach((inst) => {
+            const link = inst.querySelector('.remove-package-link');
+            link.hidden = instances.length <= 1;
+        });
+    }
+
+    function addPackageInstance() {
+        const wrapper = createPackageInstance(nextPkgId);
+        packageInstances.appendChild(wrapper);
+        nextPkgId += 1;
+        updateRemoveLinkVisibility();
+    }
+
+    function resetSaleDetails() {
+        packageInstances.innerHTML = '';
+        nextPkgId = 0;
+        addPackageInstance();
+        customerNameSale.value = '';
+        paymentMethod.value = '';
+    }
+
+    addPackageBtn.addEventListener('click', function (e) {
+        e.preventDefault();
+        addPackageInstance();
+    });
+
+    packageInstances.addEventListener('change', function (e) {
+        const t = e.target;
+        if (t.classList.contains('pkg-type')) {
+            renderPackageFields(t.dataset.pkgid);
+        } else if (t.classList.contains('pkg-initial')) {
+            const other = t.closest('.form-group').querySelector('.pkg-initial-other');
+            if (t.value === 'other') { other.hidden = false; } else { other.value = ''; other.hidden = true; }
+        } else if (t.classList.contains('pkg-monthly')) {
+            const other = t.closest('.form-group').querySelector('.pkg-monthly-other');
+            if (t.value === 'other') { other.hidden = false; } else { other.value = ''; other.hidden = true; }
+        } else if (t.classList.contains('pkg-trbs-monitoring')) {
+            const amt = t.closest('.form-group').querySelector('.pkg-trbs-monitoring-amount');
+            if (t.value === 'monthly') { amt.hidden = false; } else { amt.value = ''; amt.hidden = true; }
+        } else if (t.classList.contains('pkg-tick-tier')) {
+            const custom = t.closest('.package-fields').querySelector('.pkg-tick-custom');
+            if (t.value === 'monthly_3acre') { custom.hidden = false; } else {
+                custom.querySelectorAll('input').forEach((i) => { i.value = ''; });
+                custom.hidden = true;
+            }
+        }
+    });
+
+    packageInstances.addEventListener('click', function (e) {
+        if (e.target.classList.contains('remove-package-link')) {
+            e.preventDefault();
+            const inst = e.target.closest('.package-instance');
+            if (inst) inst.remove();
+            updateRemoveLinkVisibility();
+        }
+    });
+
+    // ---- Package math --------------------------------------------------------
+    function readPackageInstanceFields(inst, pkgKey) {
+        const def = PACKAGES[pkgKey];
+        if (!def) return {};
+        const numVal = (sel) => { const e = inst.querySelector(sel); return e ? (Number(e.value) || 0) : 0; };
+        const selVal = (sel) => { const e = inst.querySelector(sel); return e ? e.value : ''; };
+
+        if (def.kind === 'standard' || def.kind === 'termite') {
+            const initSel = selVal('.pkg-initial');
+            const initial = initSel === 'other' ? numVal('.pkg-initial-other') : (Number(initSel) || 0);
+            let monthly = 0;
+            if (def.monthlyOptions) {
+                const monSel = selVal('.pkg-monthly');
+                monthly = monSel === 'other' ? numVal('.pkg-monthly-other') : (Number(monSel) || 0);
+            }
+            const fields = { initial, monthly };
+            if (def.kind === 'termite') fields.additionalStations = numVal('.pkg-termite-stations');
+            return fields;
+        }
+        if (def.kind === 'trbs') {
+            return {
+                weightedQty: numVal('.pkg-trbs-weighted'),
+                landscapeQty: numVal('.pkg-trbs-landscape'),
+                monitoring: selVal('.pkg-trbs-monitoring'),
+                monitoringAmount: numVal('.pkg-trbs-monitoring-amount')
+            };
+        }
+        if (def.kind === 'mosquito_con') {
+            return { devices: numVal('.pkg-mosquito-devices') };
+        }
+        if (def.kind === 'tick_mosquito') {
+            return {
+                tier: selVal('.pkg-tick-tier'),
+                customInitial: numVal('.pkg-tick-custom-initial'),
+                customMonthly: numVal('.pkg-tick-custom-monthly')
+            };
+        }
+        return {};
+    }
+
+    function computePackageResult(pkgKey, f) {
+        const def = PACKAGES[pkgKey];
+        if (!def) return null;
+
+        if (def.kind === 'standard' || def.kind === 'termite') {
+            const initial = f.initial || 0;
+            const monthly = def.monthlyOptions ? (f.monthly || 0) : 0;
+            const stationFee = def.kind === 'termite' ? (f.additionalStations || 0) * 75 : 0;
+            const revenue = initial + stationFee + (def.monthlyOptions ? monthly * 11 : 0);
+            const result = { package: def.label, initialPrice: initial, monthlyPrice: def.monthlyOptions ? monthly : null, revenue };
+            if (def.kind === 'termite') result.additionalStations = f.additionalStations || 0;
+            return result;
+        }
+        if (def.kind === 'trbs') {
+            const wq = f.weightedQty || 0, lq = f.landscapeQty || 0;
+            const installCost = (wq > 0 ? 75 + Math.max(0, wq - 1) * 45 : 0) + (lq > 0 ? 75 + Math.max(0, lq - 1) * 55 : 0);
+            const monitoringMonthly = f.monitoring === 'monthly' ? (f.monitoringAmount || 0) : 0;
+            const revenue = installCost + (monitoringMonthly * 11);
+            return {
+                package: def.label, trbsWeightedQty: wq, trbsLandscapeQty: lq,
+                trbsMonitoring: f.monitoring || null, trbsMonitoringMonthly: f.monitoring === 'monthly' ? monitoringMonthly : null,
+                revenue
+            };
+        }
+        if (def.kind === 'mosquito_con') {
+            const devices = f.devices || 2;
+            const extra = Math.max(0, devices - 2);
+            const initial = 100 + extra * 50;
+            const monthly = 10 + extra * 5;
+            return { package: def.label, mosquitoDevices: devices, initialPrice: initial, monthlyPrice: monthly, revenue: initial + monthly * 11 };
+        }
+        if (def.kind === 'tick_mosquito') {
+            const TIERS = { one_time: { initial: 350, monthly: 0 }, monthly_1acre: { initial: 225, monthly: 125 }, monthly_2acre: { initial: 265, monthly: 165 } };
+            let initial, monthly;
+            if (f.tier === 'monthly_3acre') { initial = f.customInitial || 0; monthly = f.customMonthly || 0; }
+            else { const t = TIERS[f.tier] || { initial: 0, monthly: 0 }; initial = t.initial; monthly = t.monthly; }
+            return { package: def.label, tickMosquitoTier: f.tier || null, initialPrice: initial, monthlyPrice: monthly || null, revenue: initial + monthly * 11 };
+        }
+        return null;
+    }
+
+    function buildSaleDetails() {
+        const instances = Array.from(packageInstances.querySelectorAll('.package-instance'));
+        const packages = instances.map((inst) => {
+            const pkgKey = inst.querySelector('.pkg-type').value;
+            if (!pkgKey) return null;
+            const fields = readPackageInstanceFields(inst, pkgKey);
+            return computePackageResult(pkgKey, fields);
+        }).filter(Boolean);
+
+        const totalRevenue = packages.reduce((sum, p) => sum + (p.revenue || 0), 0);
+        const totalInitial = packages.reduce((sum, p) => sum + (p.initialPrice || 0), 0);
+
+        return { paymentMethod: paymentMethod.value, packages, totalRevenue, totalInitial };
+    }
+
+    // ---- Helpers -----------------------------------------------------------
+    function show(node) { node.hidden = false; }
+    function hide(node) { node.hidden = true; }
+    function clearWithin(container) {
+        container.querySelectorAll('input, select, textarea').forEach((f) => { f.value = ''; });
+    }
+    function hideAndClear(node) { clearWithin(node); hide(node); }
+
+    function mountSaleDetails(anchor) {
+        anchor.appendChild(saleDetailsBlock);
+        show(anchor);
+        show(saleDetailsBlock);
+    }
+    function unmountSaleDetails() {
+        hide(saleDetailsBlock);
+        resetSaleDetails();
+    }
+
+    // ---- Core render ---------------------------------------------------------
+    function render() {
+        const subType = submissionType.value;
+
+        subType === 'inbound_call' ? show(sectionInbound) : hideAndClear(sectionInbound);
+        subType === 'sale_submission' ? show(sectionSale) : hideAndClear(sectionSale);
+
+        if (subType === 'inbound_call') {
+            const ct = callType.value;
+            ct === 'customer_service' ? show(blockCS) : hideAndClear(blockCS);
+            ct === 'commercial' ? show(blockCommercial) : hideAndClear(blockCommercial);
+
+            if (ct === 'retention') {
+                show(blockRetention);
+                const outcome = retentionOutcome.value;
+                outcome === 'cancelled' ? show(blockCancelled) : hideAndClear(blockCancelled);
+                outcome === 'saved' ? show(blockSaved) : hideAndClear(blockSaved);
+                outcome === 'transferred_jake' ? show(blockTransferred) : hideAndClear(blockTransferred);
+            } else {
+                hideAndClear(blockRetention);
+            }
+
+            if (ct === 'inbound_sales') {
+                show(blockInboundSales);
+                const outcome = salesOutcome.value;
+                if (outcome === 'not_sold') {
+                    show(blockNotSold);
+                    notSoldReason.value === 'Other' ? show(blockNotSoldOther) : hideAndClear(blockNotSoldOther);
+                } else {
+                    hideAndClear(blockNotSold);
+                }
+                if (outcome === 'sold') {
+                    mountSaleDetails(anchorInboundSold);
+                } else if (saleDetailsBlock.parentElement === anchorInboundSold) {
+                    unmountSaleDetails();
+                    hide(anchorInboundSold);
+                }
+            } else {
+                hideAndClear(blockInboundSales);
+                if (saleDetailsBlock.parentElement === anchorInboundSold) {
+                    unmountSaleDetails();
+                    hide(anchorInboundSold);
+                }
+            }
+        }
+
+        if (subType === 'sale_submission') {
+            const st = saleType.value;
+            st === 'outbound_call_sale' ? show(blockLeadSource) : hideAndClear(blockLeadSource);
+            if (st === 'inbound_call_sale' || st === 'outbound_call_sale') {
+                mountSaleDetails(anchorSaleSubmission);
+            } else if (saleDetailsBlock.parentElement === anchorSaleSubmission) {
+                unmountSaleDetails();
+                hide(anchorSaleSubmission);
+            }
+        } else if (saleDetailsBlock.parentElement === anchorSaleSubmission) {
+            unmountSaleDetails();
+            hide(anchorSaleSubmission);
+        }
+    }
+
+    // ---- Payload assembly -----------------------------------------------------
+    function buildPayload() {
+        const payload = {
+            customerPhone: customerPhone.value.trim(),
+            salesRep: salesRep.value,
+            submissionType: submissionType.value
+        };
+
+        if (submissionType.value === 'inbound_call') {
+            payload.callType = callType.value;
+
+            if (callType.value === 'retention') {
+                payload.customerName = customerNameRetention.value.trim();
+                payload.retention = { outcome: retentionOutcome.value };
+                if (retentionOutcome.value === 'cancelled') {
+                    payload.retention.cancelReason = cancelReason.value;
+                } else if (retentionOutcome.value === 'saved') {
+                    const raw = discountAmount.value.replace(/[^\d]/g, '');
+                    payload.retention.discountAmount = raw ? Number(raw) : null;
+                } else if (retentionOutcome.value === 'transferred_jake') {
+                    payload.retention.transferReason = transferReason.value;
+                    payload.retention.customerAccountNumber = customerAccountNumber.value;
+                }
+            }
+
+            if (callType.value === 'inbound_sales') {
+                payload.inboundSales = { outcome: salesOutcome.value };
+                if (salesOutcome.value === 'not_sold') {
+                    payload.inboundSales.notSoldReason = notSoldReason.value;
+                    if (notSoldReason.value === 'Other') {
+                        payload.inboundSales.otherReasonText = otherReasonText.value.trim();
+                    }
+                }
+                if (salesOutcome.value === 'sold') {
+                    payload.inboundSales.saleDetails = buildSaleDetails();
+                    payload.customerName = customerNameSale.value.trim();
+                }
+            }
+        }
+
+        if (submissionType.value === 'sale_submission') {
+            payload.saleType = saleType.value;
+            if (saleType.value === 'outbound_call_sale') {
+                payload.leadSource = leadSource.value;
+            }
+            if (saleType.value === 'inbound_call_sale' || saleType.value === 'outbound_call_sale') {
+                payload.saleDetails = buildSaleDetails();
+                payload.customerName = customerNameSale.value.trim();
+            }
+        }
+
+        return payload;
+    }
+
+    // ---- Digit-only sanitizers -------------------------------------------------
+    function digitsOnly(inputEl) {
+        inputEl.addEventListener('input', function () {
+            const clean = inputEl.value.replace(/\D/g, '');
+            if (clean !== inputEl.value) inputEl.value = clean;
+        });
+    }
+    digitsOnly(customerPhone);
+    digitsOnly(customerAccountNumber);
+
+    // ---- Dollar-formatted discount field ---------------------------------------
+    discountAmount.addEventListener('input', function () {
+        const digits = discountAmount.value.replace(/[^\d]/g, '');
+        discountAmount.value = digits ? '$' + Number(digits).toLocaleString() : '';
+    });
+
+    // ---- Generic visible-required-field validator -------------------------------
+    // Walks EVERY [required] field in the form and blocks submission if any
+    // that is currently visible is empty. This replaces a hand-maintained
+    // list that only ever checked 3 fields — the actual bug report. Because
+    // hidden branches are already fully cleared by hideAndClear(), a field
+    // left behind in an abandoned path is never visible, so it's
+    // automatically skipped here without any extra bookkeeping.
+    function isVisible(node) {
+        let n = node;
+        while (n && n !== document.body) {
+            if (n.hidden) return false;
+            n = n.parentElement;
+        }
+        return true;
+    }
+
+    function collectMissingFields() {
+        const missing = [];
+        form.querySelectorAll('[required]').forEach((field) => {
+            if (!isVisible(field)) return;
+            if (!field.value || !field.value.trim()) {
+                const label = (field.closest('.form-group') && field.closest('.form-group').querySelector('label'))
+                    ? field.closest('.form-group').querySelector('label').textContent.replace('*', '').trim()
+                    : (field.getAttribute('aria-label') || field.id || 'A field');
+                missing.push(label);
+            }
+        });
+
+        // Targeted extra checks that don't fit the generic required-field
+        // pattern (quantity fields where 0 is a technically valid value).
+        packageInstances.querySelectorAll('.package-instance').forEach((inst) => {
+            const pkgKey = inst.querySelector('.pkg-type').value;
+            if (pkgKey === 'trbs') {
+                const wq = Number(inst.querySelector('.pkg-trbs-weighted').value) || 0;
+                const lq = Number(inst.querySelector('.pkg-trbs-landscape').value) || 0;
+                if (wq === 0 && lq === 0) missing.push('TRBS: enter at least one station quantity');
+            }
+        });
+
+        return missing;
+    }
+
+    // ---- Wire up conditional-visibility events --------------------------------
+    document.querySelectorAll('.logic-field').forEach((f) => {
+        f.addEventListener('change', render);
+    });
+
+    // ---- Load reps from Firestore (managed via admin.html) -----------------
+    let repsByPin = {};
+
+    async function loadReps() {
+        const { collection, getDocs, query, orderBy } = window.__fsFns;
+        const db = window.__db;
+        await window.__authReady;
+        const q = query(collection(db, 'reps'), orderBy('name'));
+        const snap = await getDocs(q);
+        repsByPin = {};
+        snap.forEach((doc) => {
+            const data = doc.data();
+            if (data.active === false) return;
+            if (!data.pin) return;
+            repsByPin[String(data.pin)] = data.name;
+        });
+    }
+
+    // ---- Login gate ----------------------------------------------------------
+    const SESSION_KEY = 'callLoggerRepName';
+
+    function showApp(name) {
+        salesRep.value = name;
+        salesRep.setAttribute('value', name);
+        loggedInName.textContent = name;
+        loginGate.hidden = true;
+        loggerApp.hidden = false;
+    }
+
+    function showGate() {
+        loggerApp.hidden = true;
+        loginGate.hidden = false;
+        gatePin.value = '';
+        gateStatus.textContent = 'Enter your 4-digit PIN.';
+        gateStatus.className = 'helper-text';
+        gatePin.focus();
+    }
+
+    function attemptLogin() {
+        const pin = gatePin.value.trim();
+        if (pin.length < 4) return;
+        const match = repsByPin[pin];
+        if (match) {
+            sessionStorage.setItem(SESSION_KEY, match);
+            showApp(match);
+        } else {
+            gateStatus.textContent = 'PIN not recognized — try again.';
+            gateStatus.className = 'helper-text pin-error';
+            gatePin.value = '';
+        }
+    }
+
+    gatePin.addEventListener('input', function () {
+        const digitsOnly = gatePin.value.replace(/\D/g, '').slice(0, 4);
+        if (digitsOnly !== gatePin.value) gatePin.value = digitsOnly;
+        attemptLogin();
+    });
+
+    switchUserLink.addEventListener('click', function (e) {
+        e.preventDefault();
+        sessionStorage.removeItem(SESSION_KEY);
+        salesRep.value = '';
+        salesRep.setAttribute('value', '');
+        showGate();
+    });
+
+    async function initLogin() {
+        try {
+            await loadReps();
+        } catch (err) {
+            console.error('Could not load reps:', err);
+            loggerApp.hidden = true;
+            loginGate.hidden = false;
+            gateStatus.textContent = 'Could not load the rep list — check Firebase Authentication (Anonymous must be enabled) and that Firestore rules are published.';
+            gateStatus.className = 'helper-text pin-error';
+            return;
+        }
+        const stored = sessionStorage.getItem(SESSION_KEY);
+        if (stored && Object.values(repsByPin).includes(stored)) {
+            showApp(stored);
+        } else {
+            if (stored) sessionStorage.removeItem(SESSION_KEY);
+            showGate();
+            attemptLogin();
+        }
+    }
+
+    // ---- Submit: write to Firestore ------------------------------------------
+    form.addEventListener('submit', async function (e) {
+        e.preventDefault();
+
+        const missing = collectMissingFields();
+        if (missing.length) {
+            submitStatus.textContent = 'Missing: ' + missing.join(', ');
+            submitStatus.className = 'error';
+            return;
+        }
+
+        const payload = buildPayload();
+
+        // Stable-core fields — the ONLY fields a leaderboard or summary
+        // report should ever read.
+        const soldDetails = payload.saleDetails || (payload.inboundSales && payload.inboundSales.saleDetails) || null;
+        const sold = Boolean(soldDetails);
+        const price = soldDetails ? (soldDetails.totalInitial ?? null) : null;
+        const revenue = soldDetails ? (soldDetails.totalRevenue || 0) : 0;
+
+        const record = {
+            ...payload,
+            sold,
+            price,
+            revenue,
+            timestamp: window.__fsFns.serverTimestamp()
+        };
+
+        try {
+            const { collection, addDoc } = window.__fsFns;
+            await addDoc(collection(window.__db, 'submissions'), record);
+            submitStatus.textContent = 'Logged successfully.';
+            submitStatus.className = 'success';
+            form.reset();
+            resetSaleDetails();
+            render();
+        } catch (err) {
+            console.error('Write failed:', err);
+            submitStatus.textContent = 'Something went wrong — not saved. Check your connection and try again.';
+            submitStatus.className = 'error';
+        }
+    });
+
+    resetSaleDetails(); // seed exactly one empty package instance at load
+    render();
+    initLogin();
+})();
+</script>
+
+</body>
+</html>
 
     .form-section {
         background: var(--color-box-translucent);
