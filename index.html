@@ -171,6 +171,9 @@
     #submit-status.error { color: var(--danger); }
     #submit-status.success { color: var(--color-mint-soft); }
 
+    #pin-status.pin-ok { color: var(--color-mint-soft); font-weight: 700; }
+    #pin-status.pin-error { color: var(--danger); }
+
 </style>
 
 <!-- =====================================================================
@@ -185,14 +188,14 @@
     import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js";
 
     const firebaseConfig = {
-  apiKey: "AIzaSyCHcYqfsVWo5EUqZU-c7Cr52PwJhwUTACM",
-  authDomain: "resteasycalltracking-b6441.firebaseapp.com",
-  projectId: "resteasycalltracking-b6441",
-  storageBucket: "resteasycalltracking-b6441.firebasestorage.app",
-  messagingSenderId: "202833392651",
-  appId: "1:202833392651:web:eff40e11f8b89aab39430e",
-  measurementId: "G-2WC8RZW39P"
-};
+        apiKey: "PASTE_YOUR_API_KEY",
+        authDomain: "PASTE_YOUR_PROJECT.firebaseapp.com",
+        projectId: "PASTE_YOUR_PROJECT_ID",
+        storageBucket: "PASTE_YOUR_PROJECT.appspot.com",
+        messagingSenderId: "PASTE_YOUR_SENDER_ID",
+        appId: "PASTE_YOUR_APP_ID"
+    };
+
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     const auth = getAuth(app);
@@ -226,10 +229,10 @@
                     <input type="tel" id="customerPhone" class="logic-field" placeholder="(801) 555-0199" required>
                 </div>
                 <div class="form-group">
-                    <label for="salesRep">Sales Rep<span class="req">*</span></label>
-                    <select id="salesRep" class="logic-field" required>
-                        <option value="">-- Select Rep --</option>
-                    </select>
+                    <label for="repPin">Your PIN<span class="req">*</span></label>
+                    <input type="password" id="repPin" inputmode="numeric" pattern="[0-9]*" maxlength="4" autocomplete="off" placeholder="••••">
+                    <p class="helper-text" id="pin-status">Enter your 4-digit PIN.</p>
+                    <input type="hidden" id="salesRep" value="">
                 </div>
             </div>
 
@@ -430,7 +433,9 @@
     const el = (id) => document.getElementById(id);
 
     const customerPhone   = el('customerPhone');
-    const salesRep        = el('salesRep');
+    const repPin          = el('repPin');
+    const pinStatus       = el('pin-status');
+    const salesRep        = el('salesRep'); // hidden field; holds the matched rep's name once a valid PIN is entered
     const submissionType  = el('submissionType');
 
     const sectionInbound  = el('section-inbound-call');
@@ -671,28 +676,65 @@
         f.addEventListener('change', render);
     });
 
-    // ---- Load reps from Firestore (populated/edited via admin.html) --------
+    // ---- Load reps from Firestore (managed via admin.html) -----------------
+    // Builds a PIN -> name lookup instead of populating a dropdown. Only
+    // active reps with a PIN assigned are sign-in-able; a rep without a PIN
+    // yet just can't log in until admin.html assigns them one.
+    let repsByPin = {};
+
     async function loadReps() {
         const { collection, getDocs, query, orderBy } = window.__fsFns;
         const db = window.__db;
         try {
             const q = query(collection(db, 'reps'), orderBy('name'));
             const snap = await getDocs(q);
-            salesRep.innerHTML = '<option value="">-- Select Rep --</option>';
+            repsByPin = {};
             snap.forEach((doc) => {
                 const data = doc.data();
                 if (data.active === false) return;
-                const opt = document.createElement('option');
-                opt.value = data.name;
-                opt.textContent = data.name;
-                salesRep.appendChild(opt);
+                if (!data.pin) return;
+                repsByPin[String(data.pin)] = data.name;
             });
+            checkPin(); // re-validate in case the rep already typed a PIN before this loaded
         } catch (err) {
             console.error('Could not load reps:', err);
             submitStatus.textContent = 'Could not load rep list — check Firebase config.';
             submitStatus.className = 'error';
         }
     }
+
+    // ---- PIN matching --------------------------------------------------------
+    // This is lightweight identification, not real security: it confirms
+    // "this is definitely Sarah" for the record, nothing more. No lockouts,
+    // no hashing — matches the anonymous-auth threat model this app already
+    // accepts (see firestore.rules).
+    function checkPin() {
+        const pin = repPin.value.trim();
+        if (!pin) {
+            salesRep.value = '';
+            pinStatus.textContent = 'Enter your 4-digit PIN.';
+            pinStatus.className = 'helper-text';
+            return;
+        }
+        const match = repsByPin[pin];
+        if (match) {
+            salesRep.value = match;
+            pinStatus.textContent = `✓ Logged in as ${match}`;
+            pinStatus.className = 'helper-text pin-ok';
+        } else {
+            salesRep.value = '';
+            const ready = pin.length >= 4;
+            pinStatus.textContent = ready ? 'PIN not recognized.' : 'Enter your 4-digit PIN.';
+            pinStatus.className = ready ? 'helper-text pin-error' : 'helper-text';
+        }
+    }
+
+    repPin.addEventListener('input', function () {
+        // Keep it digits-only, regardless of what device/keyboard sent.
+        const digitsOnly = repPin.value.replace(/\D/g, '').slice(0, 4);
+        if (digitsOnly !== repPin.value) repPin.value = digitsOnly;
+        checkPin();
+    });
 
     // ---- Submit: write to Firestore ------------------------------------------
     form.addEventListener('submit', async function (e) {
@@ -701,7 +743,7 @@
 
         const missing = [];
         if (!payload.customerPhone) missing.push('Customer Phone Number');
-        if (!payload.salesRep) missing.push('Sales Rep');
+        if (!payload.salesRep) missing.push('Rep PIN');
         if (!payload.submissionType) missing.push('Submission Type');
 
         if (missing.length) {
@@ -732,6 +774,7 @@
             submitStatus.textContent = 'Logged successfully.';
             submitStatus.className = 'success';
             form.reset();
+            checkPin();
             render();
         } catch (err) {
             console.error('Write failed:', err);
