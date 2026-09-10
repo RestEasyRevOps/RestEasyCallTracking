@@ -6,6 +6,10 @@
 <title>Call Logger</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<!-- EmailJS: sends the "retention request went to Jake" notification email
+     directly from the browser, no backend needed. Requires setup — see the
+     EMAILJS_* constants below in the script. -->
+<script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
 <style>
     :root {
         --color-bg-dark: #223129;
@@ -260,6 +264,7 @@
                 <div class="form-group">
                     <label for="customerPhone">Customer Phone Number<span class="req">*</span></label>
                     <input type="tel" id="customerPhone" class="logic-field" placeholder="(801) 555-0199" required>
+                    <p class="field-note">Digits only — pasted formatting is stripped automatically.</p>
                 </div>
 
                 <div class="form-group">
@@ -284,6 +289,7 @@
                         <option value="retention">Retention</option>
                         <option value="inbound_sales">Inbound Sales Opportunity</option>
                         <option value="commercial">Commercial Call</option>
+                        <option value="spam">Spam</option>
                     </select>
                 </div>
 
@@ -293,6 +299,10 @@
 
                 <div class="subfield" id="block-commercial" hidden>
                     <div class="note-box">No additional info needed yet — commercial call details will be added later. Ready to submit.</div>
+                </div>
+
+                <div class="subfield" id="block-spam" hidden>
+                    <div class="note-box">No additional info needed — ready to submit.</div>
                 </div>
 
                 <!-- Retention -->
@@ -370,7 +380,7 @@
                 <h2>Outbound Sale Submission Details</h2>
 
                 <div class="form-group">
-                    <label for="leadSource">Lead Source<span class="req">*</span></label>
+                    <label for="leadSource">Outbound Sale Lead Source<span class="req">*</span></label>
                     <select id="leadSource" class="logic-field" required>
                         <option value="">-- Select Source --</option>
                         <option value="Marketing Lead">Marketing Lead</option>
@@ -400,6 +410,7 @@
                         <option value="">-- Select Method --</option>
                         <option value="None">None</option>
                         <option value="Credit Card">Credit Card</option>
+                        <option value="Cash">Cash</option>
                     </select>
                 </div>
             </div>
@@ -434,6 +445,7 @@
     const callType        = el('callType');
     const blockCS         = el('block-customer-service');
     const blockCommercial = el('block-commercial');
+    const blockSpam       = el('block-spam');
     const blockRetention  = el('block-retention');
     const blockInboundSales = el('block-inbound-sales');
 
@@ -961,6 +973,7 @@
             const ct = callType.value;
             ct === 'customer_service' ? show(blockCS) : hideAndClear(blockCS);
             ct === 'commercial' ? show(blockCommercial) : hideAndClear(blockCommercial);
+            ct === 'spam' ? show(blockSpam) : hideAndClear(blockSpam);
 
             if (ct === 'retention') {
                 show(blockRetention);
@@ -1205,6 +1218,43 @@
     }
 
     // ---- Submit: write to Firestore ------------------------------------------
+    // ---- Jake notification (retention → Cancel/Sent to Jake) via EmailJS -----
+    // EmailJS sends real email directly from the browser — no backend needed.
+    // Requires a free account at emailjs.com: create an Email Service, an
+    // Email Template (with the "To" address set to Jake directly in the
+    // template, and {{customer_name}}/{{account_number}}/{{cancel_reason}}/
+    // {{rep_name}}/{{submitted_at}} as template variables), then paste the
+    // three IDs below. Until they're filled in, this silently no-ops — the
+    // call log itself still saves either way.
+    const EMAILJS_PUBLIC_KEY  = 'PASTE_YOUR_EMAILJS_PUBLIC_KEY';
+    const EMAILJS_SERVICE_ID  = 'PASTE_YOUR_EMAILJS_SERVICE_ID';
+    const EMAILJS_TEMPLATE_ID = 'PASTE_YOUR_EMAILJS_TEMPLATE_ID';
+
+    const emailjsReady = typeof emailjs !== 'undefined' && !EMAILJS_PUBLIC_KEY.startsWith('PASTE_');
+    if (emailjsReady) {
+        emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+    }
+
+    async function notifyJakeOfRetentionRequest(payload) {
+        if (!emailjsReady) {
+            console.warn('EmailJS not configured — Jake was not emailed. See EMAILJS_* constants near the top of this script.');
+            return;
+        }
+        try {
+            await emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+                customer_name: payload.customerName || '(not provided)',
+                account_number: (payload.retention && payload.retention.customerAccountNumber) || '(not provided)',
+                cancel_reason: (payload.retention && payload.retention.cancelReason) || '(not provided)',
+                rep_name: payload.salesRep || '(unknown)',
+                submitted_at: new Date().toLocaleString()
+            });
+        } catch (err) {
+            // Best-effort only — the call log already saved successfully
+            // regardless of whether this email goes through.
+            console.error('Failed to notify Jake by email:', err);
+        }
+    }
+
     form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
@@ -1237,6 +1287,11 @@
             await addDoc(collection(window.__db, 'submissions'), record);
             submitStatus.textContent = 'Logged successfully.';
             submitStatus.className = 'success';
+
+            if (payload.callType === 'retention' && payload.retention && payload.retention.outcome === 'cancelled_sent_to_jake') {
+                notifyJakeOfRetentionRequest(payload); // fire-and-forget, doesn't block the UI
+            }
+
             form.reset();
             resetSaleDetails();
             render();
