@@ -121,7 +121,7 @@
 
     /* ---- Standings table ---- */
     .standings-table-wrapper { width: 100%; overflow-x: auto; overflow-y: auto; border-radius: 8px; border: 1px solid var(--table-border); }
-    .standings-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 820px; }
+    .standings-table { width: 100%; border-collapse: collapse; font-size: 13px; text-align: left; min-width: 940px; }
     .standings-table th {
         color: var(--color-secondary); text-transform: uppercase; font-size: 10px; letter-spacing: 1px;
         padding: 12px 14px; border-bottom: 1px solid var(--table-border); background: var(--table-header-bg);
@@ -180,7 +180,7 @@
 
 <!-- ============ TOP TIER: fixed to "today", not affected by the toggle ============ -->
 <div class="live-performance-card">
-    <div class="lp-header">Today's Live Performance</div>
+    <div class="lp-header" id="lp-title">Today's Live Performance</div>
     <div class="lp-stats-row">
         <div class="stat-group revenue-focus">
             <span class="stat-label">Total Revenue</span>
@@ -226,11 +226,12 @@
                         <th>Close Rate</th>
                         <th>Inbound Revenue</th>
                         <th>Outbound Revenue</th>
+                        <th>Total Revenue</th>
                         <th>RPC</th>
                     </tr>
                 </thead>
                 <tbody id="standings-tbody">
-                    <tr class="empty-row"><td colspan="8">Waiting for activity...</td></tr>
+                    <tr class="empty-row"><td colspan="9">Waiting for activity...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -353,6 +354,7 @@
         "Slow down enough to actually hear the objection — it's usually not what it sounds like.",
         "Today's tough call is tomorrow's easy one.",
         "Patience is a skill, not a personality trait. You can build it.",
+        "A good script frees you up to actually listen.",
         "Nobody remembers your average day. They remember how you handled the hard one.",
         "Progress is quieter than people expect. Keep going."
     ];
@@ -510,31 +512,32 @@
     const filterInboundSold = (d) => isSoldInboundCall(d);
 
     // ===========================================================================
-    // TOP-TIER STATS (always "today")
+    // TOP-TIER STATS — scoped to the SAME window as everything else below
+    // (whatever the Day/Week/Month toggle currently selects). Previously
+    // hardcoded to "today" regardless of the toggle — fixed per report.
     // ===========================================================================
-    function allSoldPackagesToday(today) {
+    function allSoldPackagesIn(docs) {
         const packages = [];
-        today.filter((d) => d.sold === true).forEach((d) => {
+        docs.filter((d) => d.sold === true).forEach((d) => {
             const details = getSaleDetails(d);
             if (details && Array.isArray(details.packages)) packages.push(...details.packages);
         });
         return packages;
     }
 
-    function computeTodayStats() {
-        const today = docsSince(startOfDay(new Date()));
-        const opportunities = today.filter(isInboundSalesOpportunity);
+    function computeTopStats(docs) {
+        const opportunities = docs.filter(isInboundSalesOpportunity);
         const closedInbound = opportunities.filter((d) => d.sold === true);
         const inboundRevenue = closedInbound.reduce((sum, d) => sum + (d.revenue || 0), 0);
 
-        const outboundDocs = today.filter(isOutboundSale);
+        const outboundDocs = docs.filter(isOutboundSale);
         const outboundRevenue = outboundDocs.reduce((sum, d) => sum + (d.revenue || 0), 0);
 
         const totalRevenue = inboundRevenue + outboundRevenue;
         const totalSales = closedInbound.length + outboundDocs.length;
         const closeRate = opportunities.length > 0 ? (closedInbound.length / opportunities.length) * 100 : 0;
 
-        const allPackages = allSoldPackagesToday(today);
+        const allPackages = allSoldPackagesIn(docs);
         const mix = { annuity: 0, one_time: 0, inspection: 0 };
         allPackages.forEach((p) => { mix[classifyPackage(p)]++; });
         const totalPackages = allPackages.length;
@@ -578,12 +581,13 @@
                 closeRate: s.inboundOpportunities > 0 ? (s.closedInbound / s.inboundOpportunities) * 100 : 0,
                 inboundRevenue: s.inboundRevenue,
                 outboundRevenue: s.outboundRevenue,
+                totalRevenue: s.inboundRevenue + s.outboundRevenue,
                 // RPC = "Revenue Per [Inbound] Opportunity" despite the short
                 // label — divides by Inbound Opportunities, not Total
                 // Inbound Calls. Renamed/redefined per explicit correction.
                 rpc: s.inboundOpportunities > 0 ? s.inboundRevenue / s.inboundOpportunities : 0
             }))
-            .sort((a, b) => (b.inboundRevenue + b.outboundRevenue) - (a.inboundRevenue + a.outboundRevenue));
+            .sort((a, b) => b.totalRevenue - a.totalRevenue);
     }
 
     // ===========================================================================
@@ -651,8 +655,15 @@
     // ===========================================================================
     // RENDER ORCHESTRATION
     // ===========================================================================
-    function renderTodayStats() {
-        const s = computeTodayStats();
+    const LP_TITLE_BY_TIMEFRAME = {
+        day: "Today's Live Performance",
+        week: 'Week Performance',
+        month: 'Month Performance'
+    };
+
+    function renderTopStats(docs) {
+        const s = computeTopStats(docs);
+        el('lp-title').textContent = LP_TITLE_BY_TIMEFRAME[currentTimeframe] || "Today's Live Performance";
         el('lp-revenue').textContent = formatMoney(s.totalRevenue);
         el('lp-revenue-inbound').textContent = formatMoney(s.inboundRevenue);
         el('lp-revenue-outbound').textContent = formatMoney(s.outboundRevenue);
@@ -670,7 +681,7 @@
         const rows = computeStandings(docs);
         const tbody = el('standings-tbody');
         if (!rows.length) {
-            tbody.innerHTML = '<tr class="empty-row"><td colspan="8">Waiting for activity...</td></tr>';
+            tbody.innerHTML = '<tr class="empty-row"><td colspan="9">Waiting for activity...</td></tr>';
             return;
         }
         tbody.innerHTML = rows.map((r, i) => `
@@ -682,15 +693,16 @@
                 <td>${r.closeRate.toFixed(1)}%</td>
                 <td class="money-cell">${formatMoney(r.inboundRevenue)}</td>
                 <td class="money-cell">${formatMoney(r.outboundRevenue)}</td>
+                <td class="money-cell">${formatMoney(r.totalRevenue)}</td>
                 <td class="money-cell">${formatMoney(r.rpc)}</td>
             </tr>
         `).join('');
     }
 
     function renderAll() {
-        renderTodayStats(); // always "today", independent of the toggle below
         const docs = docsSince(boundaryFor(currentTimeframe));
 
+        renderTopStats(docs); // now scoped to the SAME window as the toggle, not hardcoded to today
         renderStandings(docs);
 
         renderTeamBreakdown('call-breakdown', countCategories(docs, filterInboundCall, extractCallType), CALL_TYPE_LABELS, CALL_TYPE_ORDER);
