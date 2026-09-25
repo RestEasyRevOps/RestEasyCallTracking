@@ -55,13 +55,22 @@
     header h1 { font-size: 24px; font-weight: 500; letter-spacing: -0.4px; }
     header .subtitle { margin: 4px 0 0; font-size: 12px; color: var(--color-secondary); transition: opacity 0.4s ease; }
 
-    .timeframe-toggle { display: flex; background: var(--table-header-bg); border-radius: 20px; padding: 4px; gap: 4px; border: 1px solid var(--table-border); }
-    .timeframe-toggle button {
+    .range-picker { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .range-presets { display: flex; background: var(--table-header-bg); border-radius: 20px; padding: 4px; gap: 4px; border: 1px solid var(--table-border); }
+    .range-presets button {
         border: none; background: transparent; padding: 8px 16px; border-radius: 16px;
         font-family: inherit; font-size: 12px; font-weight: 700; cursor: pointer;
         color: var(--text-muted); transition: all 0.2s ease;
     }
-    .timeframe-toggle button.active { background: var(--color-primary); color: #fff; }
+    .range-presets button.active { background: var(--color-primary); color: #fff; }
+    .range-inputs { display: flex; align-items: center; gap: 6px; }
+    .range-inputs span { color: var(--text-muted); font-size: 12px; }
+    .range-inputs input[type="date"] {
+        background: var(--table-header-bg); border: 1px solid var(--table-border);
+        color: var(--text-main); font-family: inherit; font-size: 12px; font-weight: 700;
+        border-radius: 16px; padding: 7px 12px; color-scheme: dark; cursor: pointer;
+    }
+    .range-inputs input[type="date"]:focus { outline: 1px solid var(--color-primary); }
 
     /* ---- Provisional-stats banner ---- */
     #provisional-banner {
@@ -168,10 +177,17 @@
         <h1>Live Leaderboard</h1>
         <p class="subtitle" id="rotating-subtitle"></p>
     </div>
-    <div class="timeframe-toggle" id="timeframe-toggle">
-        <button type="button" class="active" data-tf="day" onclick="setTimeframe('day')">Day</button>
-        <button type="button" data-tf="week" onclick="setTimeframe('week')">Week</button>
-        <button type="button" data-tf="month" onclick="setTimeframe('month')">Month</button>
+    <div class="range-picker" id="range-picker">
+        <div class="range-presets" id="range-presets">
+            <button type="button" class="active" data-preset="today" onclick="applyPreset('today')">Today</button>
+            <button type="button" data-preset="week" onclick="applyPreset('week')">This Week</button>
+            <button type="button" data-preset="month" onclick="applyPreset('month')">This Month</button>
+        </div>
+        <div class="range-inputs">
+            <input type="date" id="range-start" aria-label="Start date">
+            <span>–</span>
+            <input type="date" id="range-end" aria-label="End date">
+        </div>
     </div>
 </header>
 
@@ -454,20 +470,36 @@
     // TIME WINDOWS
     // ===========================================================================
     function startOfDay(d) { const x = new Date(d); x.setHours(0, 0, 0, 0); return x; }
+    function endOfDay(d) { const x = new Date(d); x.setHours(23, 59, 59, 999); return x; }
     function startOfWeek(d) { const x = startOfDay(d); x.setDate(x.getDate() - x.getDay()); return x; } // week starts Sunday
     function startOfMonth(d) { const x = startOfDay(d); x.setDate(1); return x; }
 
-    function boundaryFor(timeframe) {
-        const now = new Date();
-        if (timeframe === 'day') return startOfDay(now);
-        if (timeframe === 'week') return startOfWeek(now);
-        return startOfMonth(now);
+    // Parses a <input type="date"> value ("YYYY-MM-DD") as a LOCAL calendar
+    // date, not UTC midnight — avoids the day shifting by a timezone offset.
+    function parseDateInput(val) {
+        const [y, m, d] = val.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+    function formatDateInput(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    function formatDateShort(d) {
+        return d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     }
 
     let allSubmissions = [];
+    let rangeStart = startOfDay(new Date());
+    let rangeEnd = endOfDay(new Date());
 
-    function docsSince(boundary) {
-        return allSubmissions.filter((d) => d.timestamp && d.timestamp.toDate && d.timestamp.toDate() >= boundary);
+    function docsInRange(start, end) {
+        return allSubmissions.filter((d) => {
+            if (!d.timestamp || !d.timestamp.toDate) return false;
+            const t = d.timestamp.toDate();
+            return t >= start && t <= end;
+        });
     }
 
     // ===========================================================================
@@ -655,15 +687,19 @@
     // ===========================================================================
     // RENDER ORCHESTRATION
     // ===========================================================================
-    const LP_TITLE_BY_TIMEFRAME = {
-        day: "Today's Live Performance",
-        week: 'Week Performance',
-        month: 'Month Performance'
-    };
+    function rangeTitle(start, end) {
+        const today = new Date();
+        const sameDay = start.toDateString() === end.toDateString();
+        if (sameDay) {
+            if (start.toDateString() === today.toDateString()) return "Today's Live Performance";
+            return formatDateShort(start) + ' Performance';
+        }
+        return formatDateShort(start) + ' – ' + formatDateShort(end) + ' Performance';
+    }
 
     function renderTopStats(docs) {
         const s = computeTopStats(docs);
-        el('lp-title').textContent = LP_TITLE_BY_TIMEFRAME[currentTimeframe] || "Today's Live Performance";
+        el('lp-title').textContent = rangeTitle(rangeStart, rangeEnd);
         el('lp-revenue').textContent = formatMoney(s.totalRevenue);
         el('lp-revenue-inbound').textContent = formatMoney(s.inboundRevenue);
         el('lp-revenue-outbound').textContent = formatMoney(s.outboundRevenue);
@@ -700,9 +736,9 @@
     }
 
     function renderAll() {
-        const docs = docsSince(boundaryFor(currentTimeframe));
+        const docs = docsInRange(rangeStart, rangeEnd);
 
-        renderTopStats(docs); // now scoped to the SAME window as the toggle, not hardcoded to today
+        renderTopStats(docs); // now scoped to the SAME window as the date range picker, not hardcoded to today
         renderStandings(docs);
 
         renderTeamBreakdown('call-breakdown', countCategories(docs, filterInboundCall, extractCallType), CALL_TYPE_LABELS, CALL_TYPE_ORDER);
@@ -727,16 +763,55 @@
     }
 
     // ===========================================================================
-    // TIMEFRAME TOGGLE
+    // DATE RANGE PICKER
+    // Presets (Today / This Week / This Month) just fill in the two date
+    // inputs and re-render; typing/picking custom dates works the same way,
+    // it just clears the preset highlight since it's no longer one of them.
     // ===========================================================================
-    let currentTimeframe = 'day';
-    window.setTimeframe = function (tf) {
-        currentTimeframe = tf;
-        document.querySelectorAll('#timeframe-toggle button').forEach((btn) => {
-            btn.classList.toggle('active', btn.dataset.tf === tf);
+    function syncRangeInputs() {
+        el('range-start').value = formatDateInput(rangeStart);
+        el('range-end').value = formatDateInput(rangeEnd);
+    }
+
+    function setActivePreset(preset) {
+        document.querySelectorAll('#range-presets button').forEach((btn) => {
+            btn.classList.toggle('active', btn.dataset.preset === preset);
         });
+    }
+
+    window.applyPreset = function (preset) {
+        const now = new Date();
+        if (preset === 'today') {
+            rangeStart = startOfDay(now);
+            rangeEnd = endOfDay(now);
+        } else if (preset === 'week') {
+            rangeStart = startOfWeek(now);
+            rangeEnd = endOfDay(now);
+        } else {
+            rangeStart = startOfMonth(now);
+            rangeEnd = endOfDay(now);
+        }
+        syncRangeInputs();
+        setActivePreset(preset);
         renderAll();
     };
+
+    function handleManualRangeChange() {
+        const startVal = el('range-start').value;
+        const endVal = el('range-end').value;
+        if (!startVal || !endVal) return; // wait until both are filled in
+        let s = startOfDay(parseDateInput(startVal));
+        let e = endOfDay(parseDateInput(endVal));
+        if (s > e) { const tmp = s; s = e; e = tmp; } // tolerate the range being picked backwards
+        rangeStart = s;
+        rangeEnd = e;
+        setActivePreset(null); // custom range — no preset button applies anymore
+        renderAll();
+    }
+    el('range-start').addEventListener('change', handleManualRangeChange);
+    el('range-end').addEventListener('change', handleManualRangeChange);
+
+    syncRangeInputs(); // seed the inputs with today's date on load
 
     // ===========================================================================
     // DATA LOADING
