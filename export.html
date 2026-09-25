@@ -220,7 +220,7 @@
             headers: [
                 'Customer Name', 'Phone Number', 'Date', 'Package',
                 'Initial Price', 'Monthly Price', 'Annual Value',
-                'Sale Type', 'Lead Type'
+                'Sale Type', 'Lead Type', 'Sales Rep'
             ],
             buildRows(docs, fromDate, toDate) {
                 const rows = [];
@@ -247,7 +247,8 @@
                             'Monthly Price': pkg.monthlyPrice != null ? pkg.monthlyPrice : '',
                             'Annual Value': pkg.revenue != null ? pkg.revenue : '',
                             'Sale Type': saleType,
-                            'Lead Type': leadType
+                            'Lead Type': leadType,
+                            'Sales Rep': data.salesRep || ''
                         });
                     });
                 });
