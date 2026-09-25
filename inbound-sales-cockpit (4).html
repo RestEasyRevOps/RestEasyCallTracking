@@ -1,0 +1,1134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inbound Sales Cockpit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500;9..144,600&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+    :root {
+        --color-bg-dark: #223129;
+        --color-box-translucent: rgba(255,255,255,0.05);
+        --color-sage-accent: #4C9170;
+        --color-mint-soft: #8DC4AA;
+        --text-on-dark: #f8fafc;
+        --gold-accent: #D9A441;
+        --gold-dim: rgba(217,164,65,0.14);
+        --focus-glow: rgba(76,145,112,0.2);
+        --danger: #ef4444;
+        --border-color: rgba(255,255,255,0.1);
+
+        /* Linen script pane (from the Closer Workspace light mode) */
+        --sp-bg: #DCD7CC;
+        --sp-panel-bg: #F3EFE5;
+        --sp-input-bg: #F3EFE5;
+        --sp-hairline: rgba(0,0,0,0.12);
+        --sp-text: #262220;
+        --sp-text-dim: #8A8177;
+        --sp-dynamic: #8A5A12;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Manrope', sans-serif; background: var(--color-bg-dark); color: var(--text-on-dark); display: flex; height: 100vh; overflow: hidden; }
+    h1, h2 { font-family: 'Fraunces', serif; margin: 0; }
+    h2 { font-size: 18px; font-weight: 500; color: var(--color-mint-soft); border-bottom: 2px solid var(--border-color); padding-bottom: 10px; margin-bottom: 18px; }
+
+    #script-pane { width: 46%; background: var(--sp-bg); color: var(--sp-text); padding: 30px 34px; border-right: 1px solid rgba(0,0,0,0.2); overflow-y: auto; }
+    #input-pane { width: 54%; padding: 30px 34px; overflow-y: auto; }
+
+    /* ---------- LEFT: LINEN SCRIPT PANE ---------- */
+    #script-pane h2 { color: var(--sp-text); border-bottom-color: var(--sp-hairline); }
+    .call-section { margin-bottom: 34px; }
+    .section-title { font-family: 'Fraunces', serif; font-size: 20px; font-weight: 500; color: var(--sp-text); margin: 0 0 16px; padding-bottom: 8px; border-bottom: 1px solid var(--sp-hairline); }
+    .script-block { background: var(--sp-panel-bg); border-left: 3px solid var(--color-sage-accent); padding: 16px 20px; margin-bottom: 14px; font-size: 15.5px; line-height: 1.6; border-radius: 0 8px 8px 0; color: var(--sp-text); }
+    .script-highlight { font-weight: 700; color: var(--sp-dynamic); }
+    .price-line { border-left-color: var(--sp-dynamic); background: #F7EBD3; }
+    .field-wrapper { margin-bottom: 20px; }
+    .multi-note { background: rgba(138,90,18,0.08); border-left: 3px solid var(--sp-dynamic); padding: 14px 20px; margin-bottom: 14px; font-size: 14.5px; line-height: 1.55; border-radius: 0 8px 8px 0; color: var(--sp-text); }
+    .ask-first { background: rgba(185,28,28,0.07); border-left: 3px solid #b91c1c; color: #7f1d1d; padding: 12px 18px; margin-bottom: 14px; font-size: 14px; font-weight: 600; border-radius: 0 8px 8px 0; }
+    .manager-flag { background: rgba(185,28,28,0.08); border-left: 3px solid #b91c1c; color: #7f1d1d; padding: 12px 18px; margin-bottom: 18px; font-size: 14px; font-weight: 600; border-radius: 0 8px 8px 0; }
+    .field-note { font-size: 12px; color: var(--sp-text-dim); margin: 5px 0 0; line-height: 1.5; }
+    .pane-empty { color: var(--sp-text-dim); font-size: 14px; padding: 6px 2px 10px; }
+
+    label { display: block; font-weight: 600; margin-bottom: 7px; font-size: 11px; text-transform: uppercase; color: var(--color-mint-soft); letter-spacing: 0.5px; }
+    #script-pane label { color: #5C5249; }
+    input, select, textarea { width: 100%; padding: 11px; border-radius: 8px; font-size: 14px; font-family: inherit; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.2); color: #fff; }
+    #script-pane input, #script-pane select, #script-pane textarea { background: var(--sp-input-bg); border: 1px solid rgba(0,0,0,0.18); color: var(--sp-text); }
+    #script-pane select option { background: #F3EFE5; color: #262220; }
+    input:focus, select:focus, textarea:focus { border-color: var(--color-sage-accent); outline: none; box-shadow: 0 0 0 3px var(--focus-glow); }
+    .grid-2 { display: flex; gap: 12px; }
+    .grid-2 > div { flex: 1; }
+
+    /* Emoji pest buttons */
+    .btn-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 20px; }
+    .select-btn { background: var(--sp-panel-bg); border: 1px solid var(--sp-hairline); border-radius: 8px; padding: 11px 12px; font: inherit; font-size: 14px; font-weight: 600; color: var(--sp-text); text-align: left; cursor: pointer; transition: border-color .15s, background .15s; }
+    .select-btn:hover { border-color: var(--color-sage-accent); }
+    .select-btn.active { background: rgba(76,145,112,0.18); border-color: var(--color-sage-accent); box-shadow: 0 0 0 1px var(--color-sage-accent); }
+    .select-btn:focus-visible { outline: 2px solid var(--color-sage-accent); outline-offset: 2px; }
+
+    .pest-block { background: rgba(243,239,229,0.55); border: 1px solid var(--sp-hairline); border-radius: 10px; padding: 20px; margin-bottom: 18px; }
+    .pest-block-title { font-family: 'Fraunces', serif; font-size: 16px; color: var(--sp-dynamic); margin-bottom: 4px; }
+    .pest-block-sub { font-size: 12.5px; color: var(--sp-text-dim); margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dashed var(--sp-hairline); }
+    .desc-label { font-size: 11px; font-weight: 700; color: var(--sp-text-dim); margin: 0 0 5px 2px; }
+
+    /* Review markers — things Tyler still needs to sign off on */
+    .review-tag { display: inline-block; margin-left: 6px; font-size: 11px; font-weight: 700; color: var(--sp-dynamic); background: rgba(138,90,18,0.12); border-radius: 99px; padding: 1px 8px; vertical-align: 1px; white-space: nowrap; }
+    .tbd-block { border: 2px dashed var(--sp-dynamic); background: rgba(138,90,18,0.06); color: var(--sp-dynamic); padding: 12px 16px; border-radius: 8px; margin-bottom: 14px; font-size: 13.5px; font-weight: 600; line-height: 1.5; }
+
+    /* Combined total + agreement details */
+    .agreement-box { display: grid; grid-template-columns: minmax(160px, 0.8fr) 1.5fr; gap: 18px; background: rgba(138,90,18,0.08); border: 1px solid var(--sp-dynamic); border-radius: 10px; padding: 18px 20px; margin-bottom: 14px; color: var(--sp-text); }
+    .ct-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--sp-dynamic); font-weight: 700; margin-bottom: 8px; }
+    .ct-value { font-family: 'Fraunces', serif; font-size: 26px; line-height: 1.2; }
+    .ct-sub { font-family: 'Fraunces', serif; font-size: 16px; opacity: 0.85; margin-top: 2px; }
+    .ct-season { font-size: 11.5px; color: var(--sp-text-dim); line-height: 1.45; margin-top: 3px; }
+    .ct-tcv { font-family: 'Fraunces', serif; font-size: 16px; margin-top: 10px; color: var(--sp-dynamic); }
+    .ag-details { border-left: 1px solid rgba(138,90,18,0.3); padding-left: 18px; min-width: 0; }
+    .ag-row { background: var(--sp-panel-bg); border: 1px solid var(--sp-hairline); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; }
+    .ag-row.declined { opacity: 0.6; }
+    .ag-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 7px; }
+    .ag-title { font-weight: 700; font-size: 13.5px; }
+    .ag-controls { display: grid; grid-template-columns: 1fr; gap: 6px; }
+    #script-pane .ag-controls select { padding: 7px 8px; font-size: 12.5px; }
+    .ag-summary { font-size: 12.5px; margin-top: 7px; color: var(--sp-text); }
+    .ag-summary b { color: var(--sp-dynamic); }
+    .btn-trash, .btn-restore { background: transparent; border: 1px solid var(--sp-hairline); border-radius: 6px; padding: 3px 8px; font: inherit; font-size: 12px; cursor: pointer; color: var(--sp-text); }
+    .btn-trash:hover { border-color: #b91c1c; color: #b91c1c; }
+    .btn-restore:hover { border-color: var(--color-sage-accent); color: var(--color-sage-accent); }
+    .btn-copy { display: inline-flex; align-items: center; gap: 6px; background: var(--sp-panel-bg); color: var(--sp-text); border: 1px solid rgba(0,0,0,0.18); border-radius: 8px; padding: 9px 16px; font: inherit; font-size: 13px; font-weight: 700; cursor: pointer; margin-top: 8px; }
+    .btn-copy:hover { border-color: var(--color-sage-accent); }
+    .btn-copy.copied { background: var(--color-sage-accent); color: #fff; border-color: var(--color-sage-accent); }
+    @media (max-width: 1100px) { .agreement-box { grid-template-columns: 1fr; } .ag-details { border-left: none; padding-left: 0; } }
+
+    .btn-primary { width: 100%; background: var(--color-sage-accent); color: #fff; border: none; padding: 15px; font-size: 14px; font-weight: 700; border-radius: 8px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; margin-top: 8px; }
+    .btn-primary:hover { background: #3d7a5c; }
+
+    /* ---------- RIGHT: PRICING + METRICS (dark) ---------- */
+    .form-section { background: var(--color-box-translucent); padding: 22px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+    #input-pane .field-note { color: rgba(255,255,255,0.45); }
+    /* Option cards (Gemini layout) */
+    .plan-section { background: rgba(0,0,0,0.15); padding: 20px; border-radius: 12px; border: 1px solid var(--border-color); margin-bottom: 20px; }
+    .plan-title { font-family: 'Fraunces', serif; font-size: 16px; color: #fff; margin-bottom: 2px; }
+    .plan-covers { font-size: 12px; color: var(--color-mint-soft); margin-bottom: 18px; font-weight: 600; }
+    .card-grid { display: grid; gap: 12px; align-items: stretch; margin-top: 14px; }
+    .pitch-card { background: rgba(255,255,255,0.03); border: 1px solid var(--border-color); border-radius: 10px; padding: 20px 14px 14px; position: relative; display: flex; flex-direction: column; min-width: 0; }
+    .pitch-card.primary { border-color: var(--gold-accent); background: var(--gold-dim); }
+    .pitch-card .badge { position: absolute; top: -10px; left: 50%; transform: translateX(-50%); background: #475569; color: #fff; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 700; letter-spacing: 0.5px; text-transform: uppercase; white-space: nowrap; }
+    .pitch-card.primary .badge { background: var(--gold-accent); color: #1C1917; }
+    .pitch-card.addon .badge { background: var(--color-sage-accent); }
+    .card-title { font-family: 'Fraunces', serif; font-size: 15px; margin: 4px 0 6px; text-align: center; color: var(--gold-accent); line-height: 1.25; }
+    .card-desc { font-size: 11.5px; color: rgba(255,255,255,0.6); text-align: center; margin-bottom: 14px; line-height: 1.4; }
+    .price-block { margin-top: auto; border-top: 1px dashed var(--border-color); padding-top: 12px; }
+    .card-price-row { display: flex; justify-content: space-between; align-items: baseline; gap: 6px; margin-bottom: 5px; }
+    .price-label { font-size: 12px; color: var(--color-mint-soft); font-weight: 600; }
+    .price-value { font-size: 17px; font-weight: 800; color: #fff; white-space: nowrap; }
+    .price-value.est { font-size: 13px; color: var(--gold-accent); white-space: normal; text-align: right; }
+    .price-note { font-size: 10.5px; color: rgba(255,255,255,0.45); text-align: center; margin-top: 8px; line-height: 1.4; }
+    .expand-btn { display: block; width: 100%; margin-top: 14px; background: transparent; border: 1px dashed var(--color-mint-soft); color: var(--color-mint-soft); border-radius: 8px; padding: 10px; font: inherit; font-size: 12.5px; font-weight: 700; letter-spacing: 0.3px; cursor: pointer; }
+    .expand-btn:hover { background: rgba(141,196,170,0.08); border-style: solid; }
+    .expand-btn:focus-visible { outline: 2px solid var(--color-mint-soft); outline-offset: 2px; }
+    .addon-picker { display: flex; align-items: center; gap: 10px; margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--border-color); }
+    .addon-picker label { margin: 0; white-space: nowrap; }
+    .addon-picker select { width: auto; padding: 7px 10px; }
+    .plan-status { font-size: 13px; color: rgba(255,255,255,0.6); }
+
+    .metrics-dashboard { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 20px; }
+    .metrics-card { background: var(--color-box-translucent); border: 1px solid var(--border-color); border-radius: 12px; padding: 16px; }
+    .metrics-card h3 { margin: 0 0 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; color: var(--color-mint-soft); border-bottom: 1px solid var(--border-color); padding-bottom: 6px; }
+    .metrics-row { display: flex; justify-content: space-between; font-size: 12.5px; margin-bottom: 6px; }
+    .metrics-val { font-weight: 800; }
+    .val-highlight { color: var(--gold-accent); }
+    .leaderboard-section { background: var(--color-box-translucent); border: 1px solid var(--border-color); border-radius: 12px; padding: 18px; }
+    .leaderboard-grid { margin-top: 10px; }
+    .leaderboard-row { background: rgba(0,0,0,0.2); padding: 10px 14px; border-radius: 8px; font-size: 13px; opacity: 0.6; }
+
+    .hidden { display: none !important; }
+</style>
+</head>
+<body>
+
+<!-- ============ LEFT: SCRIPT PANE (linen) ============ -->
+<div id="script-pane">
+    <h2>Inbound Sales — Call Flow</h2>
+
+    <!-- ===== 1. DISCOVERY & EMPATHY ===== -->
+    <section class="call-section">
+        <h3 class="section-title">1. Discovery &amp; Empathy</h3>
+
+        <div class="script-block">It's a great day at Pest Control, this is Tyler, who do I have the pleasure of speaking with?</div>
+        <div class="grid-2 field-wrapper">
+            <div><label for="f-firstname">Customer First Name</label><input type="text" id="f-firstname"></div>
+            <div><label for="f-phone">Phone Number</label><input type="tel" id="f-phone"></div>
+        </div>
+
+        <div class="script-block">Hey <span class="script-highlight" id="inj-name-1">____</span>, how can I help you?</div>
+        <label>Pests / Issues (select all that apply)</label>
+        <div class="btn-grid" id="pest-grid"></div>
+
+        <div class="script-block">I completely understand. We actually specialize in <span class="script-highlight" id="inj-pests-1">those issues</span>, so we can take care of them before it becomes a larger problem. Where are you seeing the most activity?</div>
+        <div class="grid-2 field-wrapper">
+            <div><label for="f-location">Location of Activity</label><input type="text" id="f-location" placeholder="e.g., kitchen, backyard, foundation"></div>
+            <div><label for="f-duration">Duration</label><input type="text" id="f-duration" placeholder="e.g., 2 weeks, a few days"></div>
+        </div>
+
+        <div class="script-block">You called the right place <span class="script-highlight" id="inj-name-2">____</span>, we can absolutely take care of this.<span id="sqft-question"> To ensure I get you the right pricing, what's the square footage of your property?</span></div>
+        <div id="property-fields">
+            <div class="grid-2 field-wrapper">
+                <div>
+                    <label for="f-sqft">Square Footage</label>
+                    <select id="f-sqft">
+                        <option value="">-- Select --</option>
+                        <option value="le2500">2,500 sq ft or less</option>
+                        <option value="2500_4000">2,500 – 4,000 sq ft</option>
+                        <option value="4000_6000">4,000 – 6,000 sq ft</option>
+                        <option value="over6000">Over 6,000 sq ft</option>
+                        <option value="na">Not sure / N/A</option>
+                    </select>
+                </div>
+                <div>
+                    <label for="f-family">Home Size</label>
+                    <select id="f-family">
+                        <option value="">-- Select --</option>
+                        <option value="1">1 Family (1 kitchen)</option>
+                        <option value="2">2 Family (2 kitchens)</option>
+                        <option value="3">3+ Family</option>
+                        <option value="na">Not sure / N/A</option>
+                    </select>
+                </div>
+            </div>
+            <div id="manager-flag" class="manager-flag hidden">⚠ Square footage or home size wasn't captured — this account gets flagged for manager review.</div>
+        </div>
+
+        <div id="dependent-questions"></div>
+    </section>
+
+    <!-- ===== 2. TREATMENT PLAN & PRICE ===== -->
+    <section class="call-section">
+        <h3 class="section-title">2. Treatment Plan &amp; Price</h3>
+        <div id="pitch-container"><div class="pane-empty">Select pests and answer the property questions above to load the pitch.</div></div>
+        <div id="combined-total-script" class="agreement-box hidden">
+            <div class="ag-totals">
+                <div class="ct-label">Combined Total</div>
+                <div class="ct-value" id="ct-initial-display">$0 initial</div>
+                <div class="ct-sub" id="ct-monthly-display">+ $0 / month</div>
+                <div class="ct-season" id="ct-season"></div>
+                <div class="ct-sub" id="ct-eom-display"></div>
+                <div class="ct-tcv" id="ct-tcv-display">Contract value: $0</div>
+                <div class="field-note" id="ct-pending"></div>
+            </div>
+            <div class="ag-details">
+                <div class="ct-label">Agreement Details</div>
+                <div id="agreement-rows"></div>
+            </div>
+        </div>
+        <div id="discount-flag" class="manager-flag hidden"></div>
+    </section>
+
+    <!-- ===== 3. CLOSE & SCHEDULE ===== -->
+    <section class="call-section">
+        <h3 class="section-title">3. Close &amp; Schedule</h3>
+        <div class="script-block">Great! I'm going to send you over a confirmation document and then we can get something scheduled. How do you spell your last name?</div>
+        <div class="field-wrapper"><label for="f-lastname">Last Name</label><input type="text" id="f-lastname"></div>
+
+        <div class="script-block">Great thank you <span class="script-highlight" id="inj-name-3">____</span>, what's your address?</div>
+        <div class="field-wrapper"><label for="f-address">Service Address</label><input type="text" id="f-address"></div>
+
+        <div class="script-block">Thank you <span class="script-highlight" id="inj-name-4">____</span>, what's a good email address to put on file?</div>
+        <div class="field-wrapper"><label for="f-email">Customer Email</label><input type="email" id="f-email"></div>
+
+        <div class="script-block">Great. I'm sending that confirmation document over now — I'll create your customer profile and get the agreement out.</div>
+        <div class="script-block">Great, that's all set. I have a route opening up — do you prefer a morning or afternoon arrival?</div>
+        <div class="grid-2 field-wrapper">
+            <div><label for="f-date">Service Date</label><input type="date" id="f-date"></div>
+            <div>
+                <label for="f-window">Arrival Window</label>
+                <select id="f-window">
+                    <option value="Any Time">Any Time</option>
+                    <option value="8:00 AM - 12:00 PM">8:00 AM – 12:00 PM</option>
+                    <option value="12:00 PM - 4:00 PM">12:00 PM – 4:00 PM</option>
+                    <option value="4:00 PM - 8:00 PM">4:00 PM – 8:00 PM</option>
+                </select>
+            </div>
+        </div>
+        <div class="script-block">I've scheduled that appointment. We'll see you then. Welcome to the family.</div>
+
+        <div class="field-wrapper">
+            <label for="f-notes">Customer Card Notes</label>
+            <textarea id="f-notes" rows="9" placeholder="Auto-builds as you fill in the fields above — editable."></textarea>
+            <button type="button" class="btn-copy" id="btn-copy-notes">Copy Notes</button>
+        </div>
+        <div class="field-wrapper">
+            <label for="f-outcome">Call Outcome</label>
+            <select id="f-outcome">
+                <option value="">-- Status --</option>
+                <option value="Sold">Sold</option>
+                <option value="Scheduled Callback">Callback</option>
+                <option value="Not Sold">Lost</option>
+            </select>
+        </div>
+        <button type="button" class="btn-primary" onclick="submitCall()">Submit Call</button>
+    </section>
+</div>
+
+<!-- ============ RIGHT: PRICING + METRICS ============ -->
+<div id="input-pane">
+    <h2>Pricing &amp; Agreement</h2>
+    <div id="pricing-console">
+        <div class="form-section" style="text-align:center; opacity:0.5; font-size:13px;">Select pests and answer the property questions on the left to load pricing.</div>
+    </div>
+
+    <div class="metrics-dashboard">
+        <div class="metrics-card">
+            <h3>Daily Production</h3>
+            <div class="metrics-row"><span>Calls Taken:</span><span class="metrics-val">0</span></div>
+            <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val">0 (0.0%)</span></div>
+            <div class="metrics-row"><span>Total TCV:</span><span class="metrics-val val-highlight">$0.00</span></div>
+            <div class="metrics-row"><span>Avg Contract (ACV):</span><span class="metrics-val">$0.00</span></div>
+            <div class="metrics-row"><span>Rev Per Call (RPC):</span><span class="metrics-val">$0.00</span></div>
+        </div>
+        <div class="metrics-card">
+            <h3>Weekly Pacing</h3>
+            <div class="metrics-row"><span>Calls Taken:</span><span class="metrics-val">0</span></div>
+            <div class="metrics-row"><span>Closed / Rate:</span><span class="metrics-val">0 (0.0%)</span></div>
+            <div class="metrics-row"><span>Total TCV:</span><span class="metrics-val val-highlight">$0.00</span></div>
+            <div class="metrics-row"><span>Avg Contract (ACV):</span><span class="metrics-val">$0.00</span></div>
+            <div class="metrics-row"><span>Rev Per Call (RPC):</span><span class="metrics-val">$0.00</span></div>
+        </div>
+    </div>
+
+    <div class="leaderboard-section">
+        <label style="margin:0; font-weight:600; color:var(--color-mint-soft); font-size:12px; text-transform:uppercase; letter-spacing:0.5px;">Live Office Leaderboard</label>
+        <div class="leaderboard-grid"><div class="leaderboard-row">Waiting for today's activity...</div></div>
+    </div>
+</div>
+
+<script>
+/* ===== REST EASY PRICING ENGINE — all prices live here ===== */
+/* =============================================================================
+   REST EASY PEST CONTROL — PRICING ENGINE v1
+   Pure logic, no UI. Every cockpit (Inbound, Outbound, Retention, CS) should
+   call this instead of carrying its own prices, so they can never drift apart.
+
+   Sources: Company_Plans_Updated sheet, All_Companies sheet (Rats), Bed Bug
+   Sales Guidelines doc, Jeremy call transcript, Tyler's decisions in chat.
+
+   RULES
+   - TCV (monthly plans)  = initial + monthly x 11
+   - TCV (every-other-mo) = initial + fee x 5
+   - TCV (Tick seasonal)  = initial + monthly x 7   (Apr–Oct)
+   - TCV (prepay/one-time)= amount paid
+   - Inspections never count toward TCV.
+   - Over 6,000 sq ft OR 3+ families -> commercial (every pest except Tick & Mosquito,
+     which is priced by acreage, and Wildlife, which is outsourced).
+   - One-Time and Fleas keep the 4,000 sq ft cutoff.
+   ============================================================================= */
+(function (root) {
+    'use strict';
+
+    const SQFT = { LE_2500: 'le2500', T2500_4000: '2500_4000', T4000_6000: '4000_6000', OVER_6000: 'over6000', NA: 'na' };
+
+    // ⚑ ASSUMPTION (flag to Jeremy): prepay for NSR / Tick / Mosquito-Con uses
+    // "the same discount as Ultimate". Ultimate's two tiers are 11.5% and 10.6% off,
+    // so 11% off, rounded to the nearest $5, is used for all of them.
+    const PREPAY_RATE = 0.89;
+    const INSPECTION_FEE = 150;
+
+    const roundTo5 = (n) => Math.round(n / 5) * 5;
+    const money = (n) => '$' + Math.round(n).toLocaleString('en-US');
+    const isOver4k = (s) => s === SQFT.T4000_6000 || s === SQFT.OVER_6000;
+
+    // ---------- option builders ----------------------------------------------
+    function recurring({ id, name, role, initial, monthly, payments = 11, frequency = 'monthly', prepay, notes = [] }) {
+        const tcv = initial + monthly * payments;
+        return { id, name, role, kind: 'recurring', initial, monthly, frequency, payments, tcv,
+                 prepay: prepay !== undefined ? prepay : roundTo5(tcv * PREPAY_RATE), notes };
+    }
+    const flat = ({ id, name, role, price, kind = 'one_time', notes = [] }) =>
+        ({ id, name, role, kind, initial: price, monthly: 0, tcv: price, notes });
+    const inspection = ({ id = 'inspection', name = 'Inspection', role = 'pitch', free = false, notes = [] }) =>
+        ({ id, name, role, kind: free ? 'free_inspection' : 'inspection', initial: free ? 0 : INSPECTION_FEE,
+           monthly: 0, tcv: 0, notes: free ? notes : notes.concat('Cost goes toward treatment if they move forward') });
+    const estimate = ({ id, name, role = 'pitch', startsAt = null, notes = [] }) =>
+        ({ id, name, role, kind: 'estimate', initial: 0, monthly: 0, tcv: 0, startsAt, notes });
+
+    // ---------- shared general-pest pieces -----------------------------------
+    function ultimate(sqft) {
+        const T = { [SQFT.LE_2500]: [175, 55, 690], [SQFT.T2500_4000]: [225, 66, 850] };
+        if (T[sqft]) {
+            const [i, m, p] = T[sqft];
+            return recurring({ id: 'ultimate', name: 'Ultimate (Quarterly)', role: 'pitch', initial: i, monthly: m, prepay: p,
+                               notes: ['3 proactive services + 1 winter termite/rodent inspection'] });
+        }
+        return estimate({ id: 'ultimate', name: 'Ultimate — Free Estimate', startsAt: { initial: 225, monthly: 66 },
+                          notes: ['Homes 4,000–6,000 sq ft: free estimate, will be at least $225 + $66/mo'] });
+    }
+
+    function newStart(families) {
+        const init = { 1: 350, 2: 475 }[families];
+        if (init == null) return [estimate({ id: 'nsr', name: 'New Start Residential', role: 'fallback',
+                                             notes: ['Need family / kitchen count to price'] })];
+        return [
+            recurring({ id: 'nsr_monthly', name: 'New Start Residential — Monthly', role: 'fallback', initial: init, monthly: 125 }),
+            recurring({ id: 'nsr_eom', name: 'New Start Residential — Every Other Month', role: 'fallback',
+                        initial: init, monthly: 125, payments: 5, frequency: 'eom' })
+        ];
+    }
+
+    function oneTimes(sqft, guaranteeNote) {
+        if (isOver4k(sqft)) return [inspection({ id: 'one_time', name: 'One-Time — Free Inspection', role: 'fallback', free: true,
+                                                 notes: ['One-Time is only priced up to 4,000 sq ft'] })];
+        const n = guaranteeNote ? [guaranteeNote] : [];
+        return [
+            flat({ id: 'one_time', name: 'One-Time (no follow-up)', role: 'fallback', price: 350, notes: n }),
+            flat({ id: 'one_time_fu', name: 'One-Time (+1 follow-up)', role: 'fallback', price: 450, notes: n })
+        ];
+    }
+
+    // ---------- category pricers ---------------------------------------------
+    const PRICERS = {
+        general(prop) {
+            return [ultimate(prop.sqft), ...newStart(prop.families), ...oneTimes(prop.sqft)];
+        },
+
+        wasps(prop, d) {
+            if (d.nest !== 'yes' && d.nest !== 'no') return { needs: ['Is there a visible nest?'] };
+            const opts = [ultimate(prop.sqft), ...newStart(prop.families)];
+            if (d.nest === 'yes') {
+                opts.push(...oneTimes(prop.sqft, '30-day guarantee if the nest rebuilds in the same spot'));
+            } else if (isOver4k(prop.sqft)) {
+                opts.push(...oneTimes(prop.sqft));
+            } else {
+                opts.push(flat({ id: 'one_time_min', name: 'One-Time — $450 Minimum', role: 'fallback', price: 450,
+                                 notes: ['No guarantee — technician assesses scope on-site'] }));
+            }
+            return opts;
+        },
+
+        termites(prop, d) {
+            const extra = Math.max(0, Number(d.extraStations) || 0);
+            const fee = extra * 75;
+            const mgr = extra > 0 ? ['Stations beyond 10: consult Sales Manager before selling'] : [];
+            return [
+                recurring({ id: 'termite_monthly', name: 'Termite Basic — Monthly', role: 'pitch', initial: 450 + fee, monthly: 35,
+                            prepay: null, notes: ['Up to 10 stations, 3-year agreement', ...mgr] }),
+                flat({ id: 'termite_prepay', name: 'Termite — Pay Up Front', role: 'fallback', price: 1200 + fee, kind: 'prepay',
+                       notes: ['$420 renewal next year (not counted in this sale)', ...mgr] })
+            ];
+        },
+
+        tick(prop, d) {
+            const acres = Number(d.acres);
+            if (![1, 2, 3].includes(acres)) return { needs: ['How many acres?'] };
+            if (acres === 3) return [estimate({ id: 'tick_seasonal', name: 'Tick & Mosquito — 3+ Acres Free Estimate' })];
+            const [i, m] = acres === 1 ? [225, 125] : [265, 165];
+            return [
+                recurring({ id: 'tick_seasonal', name: `Tick & Mosquito Seasonal — ${acres} Acre${acres > 1 ? 's' : ''}`, role: 'pitch',
+                            initial: i, monthly: m, payments: 7, notes: ['April–October, includes 2 Mosquito-Con devices'] }),
+                flat({ id: 'tick_one_time', name: 'Tick & Mosquito One-Time', role: 'fallback', price: 350, notes: ['Up to 2 acres, no devices'] })
+            ];
+        },
+
+        rats() {
+            return [flat({ id: 'rats', name: 'Rat Service — Starting Price', role: 'pitch', price: 450, kind: 'starting',
+                           notes: ['Includes up to 4 exterior bait stations', 'Technician assesses and sells anything beyond this on-site'] })];
+        },
+
+        bedbugs(prop, d) {
+            const P = { studio: 1050, 1: 1200, 2: 1500, 3: 1800 };
+            const b = d.bedrooms;
+            const common = ['Up to 3 treatments, ~2 weeks apart', '60-day guarantee (100 bugs or fewer)',
+                            'Box spring encasements included; mattress encasements quoted by technician'];
+            if (b === 4 || b === '4') return [inspection({ id: 'bedbug_inspection', name: 'Bed Bugs — 4+ Bedroom Inspection',
+                                                           notes: ['4+ bedrooms require an inspection before pricing'] })];
+            if (P[b] == null) return { needs: ['How many bedrooms?'] };
+            return [flat({ id: 'bedbugs', name: 'Bed Bug Treatment', role: 'pitch', price: P[b], kind: 'starting', notes: common })];
+        },
+
+        fleas(prop) {
+            if (isOver4k(prop.sqft)) return [inspection({ id: 'flea_inspection', name: 'Fleas — Inspection (over 4,000 sq ft)' })];
+            return [flat({ id: 'fleas', name: 'Flea Treatment (2 visits)', role: 'pitch', price: 750 })];
+        },
+
+        inspection_only() { return [inspection({})]; },
+
+        wildlife() {
+            return [inspection({ id: 'wildlife', name: 'Wildlife — Free Inspection', free: true,
+                                 notes: ['Outsourced — no price quoted on the phone'] })];
+        }
+    };
+
+    // pest key -> pricer, and whether it needs sqft / is exempt from commercial routing
+    const PESTS = {
+        general_pests:  { label: 'Ants / Spiders / Roaches', pricer: 'general',  needsSqft: true },
+        mice:           { label: 'Mice',                     pricer: 'general',  needsSqft: true },
+        wasps:          { label: 'Wasps & Hornets',          pricer: 'wasps',    needsSqft: true },
+        termites:       { label: 'Termites',                 pricer: 'termites' },
+        tick_mosquito:  { label: 'Tick & Mosquito',          pricer: 'tick',     noCommercial: true },
+        rats:           { label: 'Rats',                     pricer: 'rats' },
+        bed_bugs:       { label: 'Bed Bugs',                 pricer: 'bedbugs' },
+        fleas:          { label: 'Fleas',                    pricer: 'fleas',    needsSqft: true },
+        carpenter_bees: { label: 'Carpenter Bees',           pricer: 'inspection_only' },
+        clothing_moths: { label: 'Clothing Moths',           pricer: 'inspection_only' },
+        flies:          { label: 'Flies',                    pricer: 'inspection_only' },
+        unlisted:       { label: 'Other / Unlisted Pest',    pricer: 'inspection_only' },
+        wildlife:       { label: 'Wildlife / Skunks',        pricer: 'wildlife', noCommercial: true }
+    };
+
+    // ---------- pitch script (left pane) --------------------------------------
+    // Every price is anchored at (price + $150). {NAME} is swapped for the customer's
+    // first name by the cockpit. Only Ultimate ends on the free re-service line;
+    // every other script ends on a value statement.
+    // drafted = Claude wrote part of this line, Tyler needs to review it.
+    // inspectionTbd = inspection expectations still need to be written.
+    const ANCHOR = 150;
+    function pitchScript(o) {
+        const none = { text: '', drafted: false, inspectionTbd: false };
+        if (!o) return none;
+        const A = money(o.initial + ANCHOR), I = money(o.initial), M = money(o.monthly || 0);
+        const lead = (what = 'a comprehensive treatment like this') =>
+            `Now as far as the price goes {NAME}, a lot of folks expect ${what} to run somewhere in the ${A} range, `;
+        const r = (text, drafted, inspectionTbd = false) => ({ text, drafted, inspectionTbd });
+        switch (o.id) {
+            case 'ultimate':
+                if (o.kind === 'estimate') break;
+                return r(`${lead()}but our standard rate to get the property completely under control is actually just ${I}. From there, it's a flat ${M} a month for the ongoing maintenance. That covers you completely—so if you ever spot anything between treatments, we'll send a tech back out at absolutely no extra charge. Okay?`, false);
+            case 'termite_monthly':
+                return r(`${lead()}but our standard rate to get your home protected is actually just ${I} for the install. From there, it's a flat ${M} a month for the ongoing monitoring. That puts a line of protection around your home that's working for you 24/7. This covers you for up to 10 stations. If my technician determines that your yard needs more than that, it will be $75 per additional station. I want to set expectations up front for you.`, true);
+            case 'tick_seasonal':
+                if (o.kind === 'estimate') return r(`For a property that size we'll do a free estimate, so the plan is built around your yard exactly.`, true, true);
+                return r(`${lead()}but our standard rate to get the property completely under control is actually just ${I}. From there, it's a flat ${M} a month, April through October. That means you and your family can actually enjoy your yard this season.`, true);
+            case 'rats':
+                return r(`${lead()}but our standard rate to get started is actually just ${I}. That includes up to 4 exterior bait stations. This is our starting price — the technician may increase it once they've seen the severity of the situation on-site. Either way, our goal is to get them away from your home and keep them away.`, true);
+            case 'bedbugs':
+                return r(`${lead()}but our standard rate for your home starts at just ${I}. That includes a 60-day guarantee, so you can get back to sleeping in your own bed without worrying.`, true);
+            case 'fleas':
+                return r(`${lead()}but our standard rate is actually just ${I} for both visits, so your home and your pets can finally be flea-free.`, true);
+        }
+        if (o.kind === 'inspection') {
+            return r(`${lead('an inspection like this')}but ours is actually just ${I}, and that goes toward your treatment if you move forward, so you're only ever paying for exactly what your home needs.`, true, true);
+        }
+        if (o.kind === 'free_inspection') {
+            return r(`We'll send someone out for a free inspection, so you'll know exactly what's going on before you spend a dime.`, true, true);
+        }
+        if (o.kind === 'estimate') {
+            return o.startsAt
+                ? r(`For a home your size we do a free estimate. Our plans start at ${money(o.startsAt.initial)} and ${money(o.startsAt.monthly)} a month, and the estimate makes sure you get a plan built for your home, not a one-size-fits-all.`, true, true)
+                : r(`For this one we'll do a free estimate, so you know exactly what you need before you commit.`, true, true);
+        }
+        return none;
+    }
+
+    // ---------- single pest ---------------------------------------------------
+    function pricePest(pestKey, property, details = {}) {
+        const pest = PESTS[pestKey];
+        if (!pest) throw new Error('Unknown pest: ' + pestKey);
+        const base = { pest: pestKey, label: pest.label, status: 'priced', options: [], pitch: null, script: '', needs: [] };
+
+        if (!pest.noCommercial && (property.sqft === SQFT.OVER_6000 || property.families === 3)) {
+            return { ...base, status: 'commercial', script: 'This one routes to commercial — no phone price.' };
+        }
+        if (pest.needsSqft && (!property.sqft || property.sqft === SQFT.NA)) {
+            return { ...base, status: 'needs_info', needs: ['Square footage'] };
+        }
+        const res = PRICERS[pest.pricer](property, details);
+        if (!Array.isArray(res)) return { ...base, status: 'needs_info', needs: res.needs };
+
+        const pitch = res.find((o) => o.role === 'pitch') || res[0];
+        const status = pitch.kind === 'estimate' ? 'estimate' : 'priced';
+        const sc = pitchScript(pitch);
+        return { ...base, status, options: res, pitch, script: sc.text, drafted: sc.drafted, inspectionTbd: sc.inspectionTbd };
+    }
+
+    // ---------- Mosquito-Con add-on (attached to Ultimate only) ---------------
+    function mosquitoCon(devices) {
+        const n = Math.max(2, Number(devices) || 2), extra = n - 2;
+        return recurring({ id: 'mosquito_con', name: `Mosquito-Con Add-On (${n} devices)`, role: 'addon',
+                           initial: 100 + extra * 50, monthly: 10 + extra * 5, notes: ['Devices only, no spray'] });
+    }
+
+    // ---------- whole account -------------------------------------------------
+    // Ants, Mice and Wasps are all covered by ONE Ultimate plan — never priced twice.
+    const ULTIMATE_GROUP = ['general_pests', 'mice', 'wasps'];
+
+    // Property questions (sq ft + home size) are needed unless every selected pest is
+    // exempt from commercial routing (Tick & Mosquito, Wildlife).
+    const needsProperty = (keys) => keys.some((k) => PESTS[k] && !PESTS[k].noCommercial);
+
+    function priceAccount({ property = {}, pests = [], mosquitoConDevices = 0 }) {
+        const group = pests.filter((p) => ULTIMATE_GROUP.includes(p.key));
+        const quotes = [];
+        if (group.length) {
+            const wasp = group.find((p) => p.key === 'wasps');
+            const q = pricePest(wasp ? 'wasps' : group[0].key, property, wasp || {});
+            quotes.push({ ...q, plan: 'ultimate', label: 'Ultimate Plan', pests: group.map((p) => p.key) });
+        }
+        pests.filter((p) => !ULTIMATE_GROUP.includes(p.key))
+             .forEach((p) => quotes.push({ ...pricePest(p.key, property, p), plan: p.key, pests: [p.key] }));
+
+        const flags = [];
+        const missing = (v) => !v || v === 'na';
+        if (needsProperty(pests.map((p) => p.key)) && (missing(property.sqft) || missing(property.families))) {
+            flags.push('MANAGER REVIEW: square footage or family type not captured');
+        }
+
+        // Mosquito-Con only rides on a priced Ultimate, never alongside Tick & Mosquito
+        let addon = null;
+        const hasTick = pests.some((p) => p.key === 'tick_mosquito');
+        const hasUltimate = quotes.some((q) => q.pitch && q.pitch.id === 'ultimate' && q.pitch.kind === 'recurring');
+        if (mosquitoConDevices >= 2 && hasUltimate && !hasTick) addon = mosquitoCon(mosquitoConDevices);
+
+        const counted = quotes.filter((q) => q.status === 'priced');
+        const sum = (f) => counted.reduce((t, q) => t + f(q.pitch), 0) + (addon ? f(addon) : 0);
+        return {
+            quotes, addon, flags,
+            totals: {
+                initial: sum((o) => o.initial),
+                monthly: sum((o) => o.monthly || 0),
+                tcv: sum((o) => o.tcv),
+                pending: quotes.length - counted.length   // estimates / commercial / missing info — never silently $0
+            }
+        };
+    }
+
+    // ---------- agreement (what the customer actually agreed to) --------------
+    // Every priced option becomes a choice; recurring plans with a prepay price also
+    // get a prepay choice. Discounts (5% / 10%) apply to the INITIAL only.
+    // 10% flags the account for manager review. This is the shape PestPac will get.
+    const cents = (n) => Math.round(n * 100) / 100;
+    const money2 = (n) => '$' + n.toLocaleString('en-US', { minimumFractionDigits: n % 1 ? 2 : 0, maximumFractionDigits: 2 });
+
+    function agreementChoices(q) {
+        if (!q || q.status !== 'priced') return [];
+        const out = [];
+        q.options.forEach((o) => {
+            const noTcv = o.kind === 'inspection' || o.kind === 'free_inspection';
+            if (o.kind === 'recurring') {
+                const per = o.frequency === 'eom' ? 'every other month' : 'mo';
+                out.push({ id: o.id, name: o.name, label: `${o.name}: ${money(o.initial)} + ${money(o.monthly)}/${per}`,
+                           initial: o.initial, monthly: o.monthly, frequency: o.frequency, payments: o.payments,
+                           seasonal: o.id === 'tick_seasonal', noTcv: false });
+                if (o.prepay) out.push({ id: o.id + '__prepay', name: o.name + ' — Prepaid', label: `${o.name}: prepay ${money(o.prepay)}`,
+                                         initial: o.prepay, monthly: 0, frequency: null, payments: 0, seasonal: false, noTcv: false });
+            } else if (o.kind !== 'estimate') {
+                out.push({ id: o.id, name: o.name, label: `${o.name}: ${o.initial ? money(o.initial) : 'Free'}`,
+                           initial: o.initial, monthly: 0, frequency: null, payments: 0, seasonal: false, noTcv });
+            }
+        });
+        return out;
+    }
+
+    // rows: [{ key, title, quote }]  selections: { key: { choiceId, discount, declined } }
+    function buildAgreement(rows, selections = {}) {
+        const lines = rows.map(({ key, title, quote }) => {
+            const choices = agreementChoices(quote);
+            const sel = selections[key] || {};
+            if (!choices.length) return { key, title, status: 'pending', choices, reason: quote ? quote.status : 'pending' };
+            if (sel.declined) return { key, title, status: 'declined', choices };
+            const pitchId = quote.pitch ? quote.pitch.id : null;
+            const choice = choices.find((c) => c.id === sel.choiceId) || choices.find((c) => c.id === pitchId) || choices[0];
+            const discount = [5, 10].includes(Number(sel.discount)) ? Number(sel.discount) : 0;
+            const initial = cents(choice.initial * (1 - discount / 100));
+            const tcv = choice.noTcv ? 0 : cents(initial + choice.monthly * choice.payments);
+            return { key, title, status: 'agreed', choices, choice, discount, listInitial: choice.initial, initial,
+                     monthly: choice.monthly, frequency: choice.frequency, seasonal: choice.seasonal, tcv };
+        });
+        const agreed = lines.filter((l) => l.status === 'agreed');
+        const sum = (f) => cents(agreed.reduce((t, l) => t + f(l), 0));
+        const monthly = sum((l) => (l.frequency === 'monthly' ? l.monthly : 0));
+        const seasonal = sum((l) => (l.seasonal ? l.monthly : 0));
+        return {
+            lines,
+            totals: {
+                initial: sum((l) => l.initial),
+                monthly,                                   // everything billed monthly (in season)
+                offSeasonMonthly: cents(monthly - seasonal), // November–March, when seasonal plans pause
+                hasSeasonal: seasonal > 0,
+                eom: sum((l) => (l.frequency === 'eom' ? l.monthly : 0)),
+                tcv: sum((l) => l.tcv),
+                pending: lines.filter((l) => l.status === 'pending').length,
+                declined: lines.filter((l) => l.status === 'declined').length
+            },
+            flags: agreed.filter((l) => l.discount === 10).map((l) => `MANAGER REVIEW: 10% discount on ${l.title}`)
+        };
+    }
+
+    const api = { SQFT, PESTS, PREPAY_RATE, ANCHOR, ULTIMATE_GROUP, needsProperty, pricePest, priceAccount, mosquitoCon, pitchScript,
+                  agreementChoices, buildAgreement, money, money2 };
+    if (typeof module !== 'undefined' && module.exports) module.exports = api;
+    else root.RestEasyPricing = api;
+})(typeof window !== 'undefined' ? window : globalThis);
+
+</script>
+
+<script>
+(function () {
+    'use strict';
+    const el = (id) => document.getElementById(id);
+    const fmt = (n) => '$' + Math.round(n).toLocaleString();
+
+    // Description scripts — verbatim from the script doc.
+    const DESCRIBE_SCRIPTS = {
+        general_pests: "When my technician gets out there, we'll start with a detailed inspection of the property to identify the specific nesting sites and pathways these bugs are using. Based on what we find, we apply a targeted combination of professional-grade treatments to build a strong exterior barrier around the foundation and entry points. Our goal is to stop them before they ever get inside, knocking down active webs or nests so you can rest easy again.",
+        wasps: "When my technician gets out there, we'll start by inspecting the rooflines, eaves, and exterior structures to locate all active nests and hidden entry points. Based on the activity, we'll use professional-grade knockdown treatments designed to instantly eliminate the colony and prevent them from rebuilding in those same areas. Our goal is to completely clear the threat of stings so you can safely enjoy your yard and rest easy again.",
+        mice: "When my technician gets out there, we'll start with a thorough inspection to identify their nesting sites, high-traffic runways, and potential food sources. Because rodents are creatures of habit, we use a strategic combination of professional-grade methods and stations placed exactly where they'll be most effective based on your home's layout. We'll monitor the activity to ensure the population is eliminated so you can regain a clean, healthy home and rest easy again.",
+        termites: "When my technician gets out there, we'll perform a comprehensive structural inspection of your property to determine the exact scope of the activity. Based on those findings, we utilize advanced, professional-grade termite systems designed to provide long-term protection and eliminate the colony at its source. Our goal is to ensure your home's structural integrity is fully protected by the most reliable technology in the industry.",
+        tick_mosquito: "When my technician gets out there, we'll start by inspecting your yard to identify the exact areas where mosquitoes and ticks are breeding and hiding—typically in thick foliage, shaded areas, and standing water. Based on your property's unique layout, we apply a targeted, professional-grade treatment to drastically reduce their populations at the source. The bottom line is we're going to break the breeding cycle so you can finally rest easy in your outdoor space again.",
+        rats: "When my technician gets out there, we'll start with a thorough inspection to identify their nesting sites, high-traffic runways, and potential food sources. Because rodents are creatures of habit, we use a strategic combination of professional-grade methods and stations placed exactly where they'll be most effective based on your home's layout. We'll monitor the activity to ensure the population is eliminated so you can regain a clean, healthy home and rest easy again.",
+        trbs: null, // no dedicated script exists yet — equipment/monitoring, not a "pest" per se
+        mosquito_con: null, // add-on, not a standalone pest — no dedicated script
+        bed_bugs: "When my technician gets out there, they'll begin with a deep-dive inspection of your furniture, baseboards, and the surrounding areas to uncover every hiding spot. From there, we go well beyond the surface, using a strategic variety of professional treatments tailored to the specific environment of the room. By targeting every life stage—from eggs to adults—we ensure the infestation is completely knocked out so you can finally rest easy again. I'll send you a quick prep list after this call to ensure everything goes perfectly.",
+        fleas: "When my technician gets out there, they'll begin with a deep-dive inspection of your furniture, baseboards, and the surrounding areas to uncover every hiding spot. From there, we go well beyond the surface, using a strategic variety of professional treatments tailored to the specific environment of the room. By targeting every life stage—from eggs to adults—we ensure the infestation is completely knocked out so you can finally rest easy again.",
+        inspection: "Because that specific pest requires a highly targeted approach, when my technician gets out there, we'll start with a standalone professional inspection to find exactly where they are harboring and breeding. We'll give you a clear, honest assessment of what the total solution looks like without boxing you into a generic plan. If you decide to move forward with the custom treatment protocol, we'll apply the entire cost of the inspection toward your service, getting the issue resolved so you can rest easy again.",
+        wildlife: "When my technician gets out there, we'll perform a thorough inspection to locate the exact nesting areas, dens, or entry points around your property. Depending on the situation, we use professional, safe extraction methods and live traps tailored to the specific animal's habits. We manage the entire process to safely remove the wildlife and identify the best ways to keep them from coming back, ensuring you can enjoy your property and rest easy again.",
+        carpenter_bees: "When my technician gets out there, we'll inspect the exterior wood structures around your home to locate the exact galleries where these bees are boring and nesting. From there, we apply a targeted, professional-grade treatment directly into the active holes to eliminate the bees and the larvae. By addressing the nests directly, we stop them from further damaging your wood structures so you can protect your investment and rest easy again."
+    };
+
+    const OBJECTION_SCRIPTS = [
+        { key: 'ok', label: 'Okay, moving forward', text: '' },
+        { key: 'obj_safety', label: '"Is it safe for my kids and pets?"', text: "I completely understand that concern, and safety is our absolute top priority. Because my technician is a licensed professional, they know exactly how to apply these treatments so they are highly effective against pests but perfectly safe for your family and pets once dry. They will walk you through any specific precautions before they even start. Let's get you on the schedule so we can get this resolved safely." },
+        { key: 'obj_price', label: '"The price is too high / Can you do it cheaper?"', text: "I hear you, and I want to make sure you're getting the best value. The reality is, a cheaper, quick-spray service often means the bugs just come right back. We are pricing a comprehensive, professional-grade solution designed to eliminate the colony at the source so you aren't paying for this over and over again. Let's get the technician out there to do this the right way the first time." },
+        { key: 'obj_spouse', label: '"I need to talk to my spouse first."', text: "I completely get that, and you absolutely should keep them in the loop. What most of my customers do in this situation is lock in a time on the schedule right now so you don't lose your spot, and if your spouse has any major concerns, you can always give me a call back to adjust. Let's pencil you in so we can get an expert out there as soon as possible." },
+        { key: 'obj_onetime', label: '"I only want a one-time spray, not a contract."', text: "I understand not wanting to be tied down. We do offer a one-time service, but depending on the pest, an isolated spray often only kills the adults you see today while leaving the eggs to hatch next week. The protection plan is actually designed to break the full breeding cycle so you aren't calling us back in a month. Let's get the technician out there to assess the activity, and we can lock in the plan that actually solves the problem." },
+        { key: 'obj_competitor', label: '"I already have another pest control company."', text: "I appreciate you letting me know. The fact that you are still seeing activity tells me their current treatment protocol might not be breaking the breeding cycle for this specific issue. My technician has specialized tools that go beyond basic maintenance sprays. Let's get our expert eyes on it, and if nothing else, we can give you a second opinion on what your current company might be missing." }
+    ];
+
+
+    // =========================================================================
+    // PEST BUTTONS
+    // Rats and TRBS are merged (TRBS = the bait stations used for rats).
+    // Mosquito-Con is an add-on under Ultimate, not a pest button.
+    // =========================================================================
+    const PEST_BUTTONS = [
+        ['general_pests', '🐜'], ['mice', '🐁'], ['wasps', '🐝'], ['termites', '🪵'],
+        ['tick_mosquito', '🦟'], ['rats', '🐀'], ['bed_bugs', '🛏️'], ['fleas', '🦟'],
+        ['carpenter_bees', '🐝'], ['clothing_moths', '🦋'], ['flies', '🪰'], ['unlisted', '🔍'], ['wildlife', '🦝']
+    ];
+    const SCRIPT_KEY = { clothing_moths: 'inspection', flies: 'inspection', unlisted: 'inspection' };
+
+    // Questions that only appear when a selected pest needs them for pricing
+    const DEPENDENT = {
+        wasps: { field: 'nest', label: 'Visible Nest?', script: 'Now as far as the wasps, can you see the nest anywhere — on the house, in a bush, in a tree?',
+                 options: [['', '-- Select --'], ['yes', 'Yes'], ['no', 'No']] },
+        tick_mosquito: { field: 'acres', label: 'Property Size', script: 'Now as far as those ticks and mosquitoes, about how big is the property — up to an acre, two acres, or more?',
+                 options: [['', '-- Select --'], ['1', 'Up to 1 acre'], ['2', 'Up to 2 acres'], ['3', '3+ acres']] },
+        bed_bugs: { field: 'bedrooms', label: 'Bedrooms', script: 'Now as far as those bed bugs, how many bedrooms are in the home?',
+                 options: [['', '-- Select --'], ['studio', 'Studio'], ['1', '1 Bedroom'], ['2', '2 Bedrooms'], ['3', '3 Bedrooms'], ['4', '4+ Bedrooms']] }
+    };
+
+    // Plan openers. drafted = Claude wrote it, Tyler to review.
+    const INSPECT_OPENER = { text: "What we do here is send a technician out to inspect first, so we know exactly what we're dealing with before we treat.", drafted: true };
+    const PLAN_OPENERS = {
+        ultimate:      { text: 'What we do here is a 12 month agreement where we come out and treat your home every 3 months.', drafted: false },
+        termites:      { text: 'What we do here is a 3 year protection plan where we install monitoring stations around your home and keep watch on them for you.', drafted: true },
+        tick_mosquito: { text: 'What we do here is a seasonal treatment plan where we treat April through October.', drafted: false },
+        rats:          { text: "What we do here is a rodent service where we place bait stations around the outside of your home and find out exactly how they're getting in.", drafted: true },
+        bed_bugs:      { text: 'What we do here is a series of up to three treatments, about two weeks apart, so we get the bed bugs at every stage of their life cycle.', drafted: true },
+        fleas:         { text: 'What we do here is a two-visit flea treatment, about two weeks apart, so we get the adults and the ones still hatching.', drafted: true },
+        carpenter_bees: INSPECT_OPENER, clothing_moths: INSPECT_OPENER, flies: INSPECT_OPENER, unlisted: INSPECT_OPENER,
+        wildlife:      { text: 'What we do here is send a wildlife specialist out to inspect first, since every wildlife situation is different.', drafted: true }
+    };
+
+    // How each pest is said out loud in "We have separate treatment plans for ..."
+    const SPOKEN = { general_pests: 'bugs', mice: 'mice', wasps: 'wasps', termites: 'termites', tick_mosquito: 'ticks and mosquitoes',
+                     rats: 'rats', bed_bugs: 'bed bugs', fleas: 'fleas', carpenter_bees: 'carpenter bees', clothing_moths: 'clothing moths',
+                     flies: 'flies', unlisted: 'other pests', wildlife: 'wildlife' };
+
+    // One-line descriptions on the right-pane cards
+    const CARD_DESC = {
+        ultimate: 'Treated every 3 months, 12-month agreement.',
+        nsr_monthly: 'Service every other month, billed monthly.',
+        nsr_eom: 'Service every other month, billed per visit.',
+        nsr: 'Needs home size to price.',
+        one_time: 'No contract. No follow-up.',
+        one_time_fu: 'No contract. Includes one follow-up.',
+        one_time_min: 'No guarantee. Tech assesses on-site.',
+        termite_monthly: '3-year agreement, up to 10 stations.',
+        termite_prepay: 'Install paid up front.',
+        tick_seasonal: 'Monthly, April through October.',
+        tick_one_time: 'One visit, up to 2 acres.',
+        rats: 'Up to 4 exterior bait stations.',
+        bedbugs: 'Up to 3 treatments, 60-day guarantee.',
+        bedbug_inspection: '4+ bedrooms need an inspection first.',
+        fleas: 'Two visits, about two weeks apart.',
+        flea_inspection: 'Over 4,000 sq ft needs an inspection.',
+        inspection: 'Credited toward treatment.',
+        wildlife: 'Outsourced — no phone price.',
+        mosquito_con: 'Devices only, no spray.'
+    };
+
+    const REVIEW = '<span class="review-tag">⚑ Draft — review</span>';
+    const REBUTTAL_FLAG = '<span class="review-tag">⚑ Placeholder rebuttal — rewrite</span>';
+    const INSPECTION_TBD = '<div class="tbd-block">🚩 Inspection expectations — Tyler to write. What the customer should expect at the inspection goes here.</div>';
+
+    // =========================================================================
+    // STATE + RENDERING
+    // =========================================================================
+    const selected = [];     // pest keys, in the order clicked
+    const answers = {};      // pestKey -> dependent answers (survive re-renders)
+    const objections = {};   // plan key -> selected objection
+    const selections = {};   // plan key -> { choiceId, discount, declined }  (what the customer agreed to)
+    const expanded = {};     // plan key -> right-pane "show more" open
+    let mosquitoConDevices = 0;
+    let lastAccount = null;
+    let lastAgreement = null;
+    const E = RestEasyPricing;
+
+    const esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+    const highlightMoney = (s) => esc(s).replace(/\$[\d,]+/g, (m) => `<span class="script-highlight">${m}</span>`);
+    const label = (k) => RestEasyPricing.PESTS[k].label;
+    const firstName = () => el('f-firstname').value.trim() || '____';
+
+    function buildPestButtons() {
+        el('pest-grid').innerHTML = PEST_BUTTONS.map(([k, emoji]) =>
+            `<button type="button" class="select-btn" data-pest="${k}" aria-pressed="false">${emoji} ${esc(label(k))}</button>`).join('');
+        el('pest-grid').querySelectorAll('.select-btn').forEach((btn) => btn.addEventListener('click', () => {
+            const k = btn.dataset.pest, i = selected.indexOf(k);
+            if (i === -1) selected.push(k); else selected.splice(i, 1);
+            btn.classList.toggle('active', i === -1);
+            btn.setAttribute('aria-pressed', String(i === -1));
+            onSelectionChange();
+        }));
+    }
+
+    function getProperty() {
+        const s = el('f-sqft').value, f = el('f-family').value;
+        return { sqft: s || undefined, families: f === '' ? undefined : f === 'na' ? 'na' : Number(f) };
+    }
+    const propertyNeeded = () => RestEasyPricing.needsProperty(selected);
+
+    function onSelectionChange() {
+        el('inj-pests-1').textContent = selected.length ? selected.map(label).join(', ') : 'those issues';
+        // Square footage + home size only show when a selected pest needs them
+        const need = !selected.length || propertyNeeded();
+        el('property-fields').classList.toggle('hidden', !need);
+        el('sqft-question').classList.toggle('hidden', !need);
+        renderDependentQuestions();
+        renderPitch();
+    }
+
+    function renderDependentQuestions() {
+        el('dependent-questions').innerHTML = selected.filter((k) => DEPENDENT[k]).map((k) => {
+            const q = DEPENDENT[k], cur = (answers[k] || {})[q.field];
+            return `<div class="script-block">${esc(q.script)}</div>
+                <div class="field-wrapper"><label>${q.label}</label>
+                <select class="dep" data-pest="${k}" data-field="${q.field}">${q.options.map(([v, l]) =>
+                    `<option value="${v}"${cur != null && String(cur) === v ? ' selected' : ''}>${l}</option>`).join('')}</select></div>`;
+        }).join('');
+        el('dependent-questions').querySelectorAll('.dep').forEach((sel) => sel.addEventListener('change', () => {
+            const a = (answers[sel.dataset.pest] = answers[sel.dataset.pest] || {});
+            const v = sel.value;
+            a[sel.dataset.field] = v === '' ? undefined : (v === 'yes' || v === 'no' || v === 'studio') ? v : Number(v);
+            refreshPricing();
+        }));
+    }
+
+    function pitchReady() {
+        if (!selected.length) return false;
+        if (!propertyNeeded()) return true;
+        return !!(el('f-sqft').value && el('f-family').value);
+    }
+
+    // Builds section 2 — one block per plan, then fills prices.
+    function renderPitch() {
+        updateFlag();
+        if (!pitchReady()) {
+            el('pitch-container').innerHTML = `<div class="pane-empty">Select pests and answer the property questions above to load the pitch.</div>`;
+            el('combined-total-script').classList.add('hidden');
+            el('pricing-console').innerHTML = `<div class="form-section" style="text-align:center; opacity:0.5; font-size:13px;">Select pests and answer the property questions on the left to load pricing.</div>`;
+            el('discount-flag').classList.add('hidden');
+            lastAccount = null; lastAgreement = null; updateNotes(); return;
+        }
+        refreshPricing();
+    }
+
+    function computeAccount() {
+        return RestEasyPricing.priceAccount({
+            property: getProperty(),
+            pests: selected.map((k) => ({ key: k, ...(answers[k] || {}) })),
+            mosquitoConDevices
+        });
+    }
+
+    function planTitle(q) {
+        return q.plan === 'ultimate' ? 'Ultimate Plan' : q.label;
+    }
+
+    const objectionHtml = (key) => {
+        const m = OBJECTION_SCRIPTS.find((o) => o.key === key);
+        return m && m.text ? esc(m.text) + REBUTTAL_FLAG : '';
+    };
+
+    // "the bugs and mice, and the termites"
+    function spokenPlans(quotes) {
+        const groups = quotes.map((q) => {
+            const names = q.pests.map((k) => SPOKEN[k]);
+            const joined = names.length > 1 ? names.slice(0, -1).join(', ') + ' and ' + names[names.length - 1] : names[0];
+            return 'the ' + joined;
+        });
+        if (groups.length === 2) return groups.join(', and ');
+        return groups.slice(0, -1).join(', ') + ', and ' + groups[groups.length - 1];
+    }
+
+    function refreshPricing() {
+        if (!pitchReady()) return renderPitch();
+        const acct = computeAccount();
+        lastAccount = acct;
+        const name = `<span class="script-highlight">${esc(firstName())}</span>`;
+
+        // ---- LEFT: the pitch, plan by plan ----
+        let intro = 'Thank you for this information, our technicians deal with situations like this all of the time.';
+        if (acct.quotes.length > 1) intro += ` We have separate treatment plans for ${spokenPlans(acct.quotes)}, so I'll explain each treatment separately so you know how we will take care of you.`;
+        let html = `<div class="script-block">${esc(intro)}</div>`;
+
+        html += acct.quotes.map((q, i) => {
+            const covers = q.plan === 'ultimate' ? `<div class="pest-block-sub">Covers: ${esc(q.pests.map(label).join(', '))}</div>` : `<div class="pest-block-sub"></div>`;
+            let body = '';
+            if (q.status === 'commercial') {
+                body = `<div class="ask-first">Over 6,000 sq ft or 3+ family — this routes to commercial. Don't quote a price.</div>`;
+            } else {
+                const op = PLAN_OPENERS[q.plan];
+                if (op) body += `<div class="script-block">${esc(op.text)}${op.drafted ? REVIEW : ''}</div>`;
+                q.pests.forEach((k) => {
+                    const d = DESCRIBE_SCRIPTS[SCRIPT_KEY[k] || k];
+                    if (!d) return;
+                    if (q.pests.length > 1) body += `<div class="desc-label">${esc(label(k))}</div>`;
+                    body += `<div class="script-block">${d}</div>`;
+                });
+                if (q.status === 'needs_info') {
+                    body += `<div class="ask-first">Answer the question above first: ${esc(q.needs.join(', '))}</div>`;
+                } else {
+                    body += `<div class="script-block price-line">${highlightMoney(q.script).replace('{NAME}', name)}${q.drafted ? REVIEW : ''}</div>`;
+                    if (q.inspectionTbd) body += INSPECTION_TBD;
+                    if (q.pests.includes('wasps') && (answers.wasps || {}).nest === 'yes') {
+                        body += `<div class="field-note" style="margin:-6px 0 12px;">Mention: it's normal to see some activity for 2–4 days after treatment — the wasps that weren't in the nest come back looking for it.</div>`;
+                    }
+                    body += `<div class="field-note" style="margin-bottom:10px;">If they push back, the other options are on the right.</div>`;
+                }
+                const cur = objections[q.plan];
+                body += `<label style="margin-top:6px;">Customer Response</label>
+                    <select class="pest-objection" data-plan="${q.plan}">
+                        ${OBJECTION_SCRIPTS.map((o) => `<option value="${o.key}"${cur === o.key ? ' selected' : ''}>${o.label}</option>`).join('')}
+                    </select>
+                    <div class="objection-response" style="font-size:13.5px; margin-top:8px; line-height:1.55;">${objectionHtml(cur)}</div>`;
+            }
+            return `<div class="pest-block"><div class="pest-block-title">${i + 1}. ${esc(planTitle(q))}</div>${covers}${body}</div>`;
+        }).join('');
+        el('pitch-container').innerHTML = html;
+        el('pitch-container').querySelectorAll('.pest-objection').forEach((sel) => sel.addEventListener('change', () => {
+            objections[sel.dataset.plan] = sel.value;
+            sel.nextElementSibling.innerHTML = objectionHtml(sel.value);
+        }));
+
+        renderOptionCards(acct);
+        el('combined-total-script').classList.remove('hidden');
+        refreshAgreement();
+    }
+
+    // ---- RIGHT: three focused cards per plan, the rest behind "Show more options" ----
+    function primaryIds(q) {
+        if (q.plan !== 'ultimate') return q.options.map((o) => o.id);
+        const ids = q.options.map((o) => o.id);
+        const pick = [q.pitch.id];
+        const nsr = ids.find((id) => id === 'nsr_monthly') || ids.find((id) => id === 'nsr');
+        if (nsr) pick.push(nsr);
+        const ot = ['one_time_fu', 'one_time_min', 'one_time'].find((id) => ids.includes(id));
+        if (ot) pick.push(ot);
+        return pick;
+    }
+
+    function card(o, kind) {
+        const tag = kind === 'pitch' ? 'Pitch First' : kind === 'addon' ? 'Add-On' : 'Fallback';
+        const cls = kind === 'pitch' ? ' primary' : kind === 'addon' ? ' addon' : '';
+        const rows = [], notes = [];
+        const row = (a, b, est) => rows.push(`<div class="card-price-row"><span class="price-label">${a}</span><span class="price-value${est ? ' est' : ''}">${b}</span></div>`);
+        switch (o.kind) {
+            case 'recurring':
+                row('Initial', fmt(o.initial));
+                row(o.frequency === 'eom' ? 'Every Other Mo' : 'Monthly', fmt(o.monthly));
+                if (o.prepay) row('Or Prepay', fmt(o.prepay));
+                notes.push(`Contract value ${fmt(o.tcv)} (${o.initial} + ${o.monthly} × ${o.payments})`);
+                break;
+            case 'estimate':
+                row('Price', 'Free Estimate', true);
+                if (o.startsAt) notes.push(`At least ${fmt(o.startsAt.initial)} + ${fmt(o.startsAt.monthly)}/mo`);
+                break;
+            case 'inspection':
+                row('Inspection', fmt(o.initial)); notes.push('Not counted in contract value'); break;
+            case 'free_inspection':
+                row('Inspection', 'Free', true); break;
+            case 'starting':
+                row('Starting', fmt(o.initial) + '+'); break;
+            default:
+                row('Price', fmt(o.initial));
+        }
+        (o.notes || []).forEach((n) => notes.push(n));
+        return `<div class="pitch-card${cls}">
+            <div class="badge">${tag}</div>
+            <div class="card-title">${esc(o.name)}</div>
+            <div class="card-desc">${esc(CARD_DESC[o.id] || '')}</div>
+            <div class="price-block">${rows.join('')}</div>
+            ${notes.map((n) => `<div class="price-note">${esc(n)}</div>`).join('')}
+        </div>`;
+    }
+    const grid = (cards) => cards.length ? `<div class="card-grid" style="grid-template-columns: repeat(${Math.min(cards.length, 3)}, minmax(0, 1fr));">${cards.join('')}</div>` : '';
+
+    function renderOptionCards(acct) {
+        const hasTick = selected.includes('tick_mosquito');
+        el('pricing-console').innerHTML = acct.quotes.map((q) => {
+            let inner = '';
+            if (q.status === 'needs_info') inner = `<div class="plan-status">Waiting on: ${esc(q.needs.join(', '))}</div>`;
+            else if (q.status === 'commercial') inner = `<div class="plan-status">Routes to commercial — no phone price.</div>`;
+            else {
+                const main = primaryIds(q);
+                const first = q.options.filter((o) => main.includes(o.id));
+                const rest = q.options.filter((o) => !main.includes(o.id));
+                inner = grid(first.map((o) => card(o, o === q.pitch ? 'pitch' : 'fallback')));
+                if (rest.length) {
+                    if (expanded[q.plan]) inner += grid(rest.map((o) => card(o, 'fallback')));
+                    inner += `<button type="button" class="expand-btn" data-plan="${q.plan}" aria-expanded="${!!expanded[q.plan]}">${expanded[q.plan] ? 'Show fewer options' : `Show ${rest.length} more option${rest.length > 1 ? 's' : ''}`}</button>`;
+                }
+            }
+            let addon = '';
+            if (q.plan === 'ultimate' && q.pitch && q.pitch.kind === 'recurring' && !hasTick) {
+                addon = `<div class="addon-picker"><label for="f-mosquitocon">Add Mosquito-Con?</label>
+                    <select id="f-mosquitocon">${[0, 2, 3, 4, 5, 6].map((n) => `<option value="${n}"${mosquitoConDevices === n ? ' selected' : ''}>${n ? n + ' devices' : 'No'}</option>`).join('')}</select></div>`
+                    + (acct.addon ? grid([card(acct.addon, 'addon')]).replace('repeat(1,', 'repeat(3,') : '');
+            }
+            const covers = q.plan === 'ultimate' ? `<div class="plan-covers">Covers ${esc(q.pests.map(label).join(', '))}</div>` : '<div class="plan-covers"></div>';
+            return `<div class="plan-section"><div class="plan-title">${esc(planTitle(q))}</div>${covers}${inner}${addon}</div>`;
+        }).join('');
+        el('pricing-console').querySelectorAll('.expand-btn').forEach((btn) => btn.addEventListener('click', () => {
+            expanded[btn.dataset.plan] = !expanded[btn.dataset.plan];
+            renderOptionCards(lastAccount);
+        }));
+        const mc = el('f-mosquitocon');
+        if (mc) mc.addEventListener('change', () => { mosquitoConDevices = Number(mc.value); refreshPricing(); });
+    }
+
+    // ---- AGREEMENT: what the customer actually agreed to ----
+    function agreementRows() {
+        if (!lastAccount) return [];
+        const rows = lastAccount.quotes.map((q) => ({ key: q.plan, title: planTitle(q), quote: q }));
+        if (lastAccount.addon) rows.push({ key: 'mosquito_con', title: 'Mosquito-Con Add-On',
+                                           quote: { status: 'priced', options: [lastAccount.addon], pitch: lastAccount.addon } });
+        return rows;
+    }
+
+    function refreshAgreement() {
+        const ag = E.buildAgreement(agreementRows(), selections);
+        lastAgreement = ag;
+        const m2 = E.money2;
+
+        el('agreement-rows').innerHTML = ag.lines.map((l) => {
+            if (l.status === 'pending') {
+                const why = l.reason === 'commercial' ? 'routes to commercial' : l.reason === 'estimate' ? 'free estimate' : 'waiting on an answer';
+                return `<div class="ag-row declined"><div class="ag-head"><span class="ag-title">${esc(l.title)}</span></div><div class="ag-summary">Pending — ${why}</div></div>`;
+            }
+            if (l.status === 'declined') {
+                return `<div class="ag-row declined"><div class="ag-head"><span class="ag-title">${esc(l.title)}</span>
+                    <button type="button" class="btn-restore" data-key="${l.key}">Restore</button></div>
+                    <div class="ag-summary">Declined — not in the total</div></div>`;
+            }
+            const per = l.frequency === 'eom' ? ' every other month' : '/mo';
+            const price = `<b>${m2(l.initial)}</b>${l.discount ? ` (${l.discount}% off ${m2(l.listInitial)})` : ''}${l.monthly ? ` + <b>${m2(l.monthly)}</b>${per}` : ''}`;
+            return `<div class="ag-row"><div class="ag-head"><span class="ag-title">${esc(l.title)}</span>
+                    <button type="button" class="btn-trash" data-key="${l.key}" aria-label="Customer declined ${esc(l.title)}">🗑 Remove</button></div>
+                <div class="ag-controls">
+                    <select class="ag-choice" data-key="${l.key}" aria-label="Plan agreed to">${l.choices.map((c) => `<option value="${c.id}"${c.id === l.choice.id ? ' selected' : ''}>${esc(c.label)}</option>`).join('')}</select>
+                    <select class="ag-discount" data-key="${l.key}" aria-label="Discount on initial">${[0, 5, 10].map((d) => `<option value="${d}"${d === l.discount ? ' selected' : ''}>${d ? d + '% off' : 'No discount'}</option>`).join('')}</select>
+                </div>
+                <div class="ag-summary">Agreed: ${price}</div></div>`;
+        }).join('');
+
+        const sel = (k) => (selections[k] = selections[k] || {});
+        el('agreement-rows').querySelectorAll('.ag-choice').forEach((s) => s.addEventListener('change', () => { sel(s.dataset.key).choiceId = s.value; refreshAgreement(); }));
+        el('agreement-rows').querySelectorAll('.ag-discount').forEach((s) => s.addEventListener('change', () => { sel(s.dataset.key).discount = Number(s.value); refreshAgreement(); }));
+        el('agreement-rows').querySelectorAll('.btn-trash').forEach((b) => b.addEventListener('click', () => { sel(b.dataset.key).declined = true; refreshAgreement(); }));
+        el('agreement-rows').querySelectorAll('.btn-restore').forEach((b) => b.addEventListener('click', () => { sel(b.dataset.key).declined = false; refreshAgreement(); }));
+
+        const t = ag.totals;
+        el('ct-initial-display').textContent = m2(t.initial) + ' initial';
+        el('ct-monthly-display').textContent = '+ ' + m2(t.monthly) + ' / month';
+        el('ct-monthly-display').classList.toggle('hidden', !t.monthly);
+        el('ct-season').textContent = t.hasSeasonal ? `${m2(t.monthly)}/mo April–October, then ${m2(t.offSeasonMonthly)}/mo November–March` : '';
+        el('ct-eom-display').textContent = t.eom ? `+ ${m2(t.eom)} every other month` : '';
+        el('ct-tcv-display').textContent = 'Contract value: ' + m2(t.tcv);
+        el('ct-pending').textContent = t.pending ? `${t.pending} plan${t.pending > 1 ? 's' : ''} not in this total (estimate, commercial, or waiting on an answer)` : '';
+        el('discount-flag').textContent = ag.flags.length ? '⚠ 10% discount — this account gets flagged for manager review.' : '';
+        el('discount-flag').classList.toggle('hidden', !ag.flags.length);
+        updateNotes();
+    }
+
+    function updateFlag() {
+        const s = el('f-sqft').value, f = el('f-family').value;
+        el('manager-flag').classList.toggle('hidden', !(selected.length && propertyNeeded() && (s === 'na' || f === 'na')));
+    }
+
+    function updateNotes() {
+        const nm = (el('f-firstname').value + ' ' + el('f-lastname').value).trim() || '(name pending)';
+        const txt = (id) => (el(id).value ? el(id).selectedOptions[0].textContent : '(not captured)');
+        const lines = [
+            `Customer: ${nm}`,
+            `Phone: ${el('f-phone').value || '(not captured)'}`,
+            `Pests: ${selected.length ? selected.map(label).join(', ') : '(none selected)'}`,
+            `Location: ${el('f-location').value || '(not captured)'}`,
+            `Duration: ${el('f-duration').value || '(not captured)'}`
+        ];
+        if (propertyNeeded()) lines.push(`Sq Ft: ${txt('f-sqft')}`, `Home Size: ${txt('f-family')}`);
+        const a = answers;
+        if (selected.includes('wasps') && a.wasps && a.wasps.nest) lines.push(`Visible nest: ${a.wasps.nest === 'yes' ? 'Yes' : 'No'}`);
+        if (selected.includes('tick_mosquito') && a.tick_mosquito && a.tick_mosquito.acres) lines.push(`Property size: ${a.tick_mosquito.acres === 3 ? '3+ acres' : 'up to ' + a.tick_mosquito.acres + ' acre' + (a.tick_mosquito.acres > 1 ? 's' : '')}`);
+        if (selected.includes('bed_bugs') && a.bed_bugs && a.bed_bugs.bedrooms != null) lines.push(`Bedrooms: ${a.bed_bugs.bedrooms === 4 ? '4+' : a.bed_bugs.bedrooms}`);
+        if (lastAgreement) {
+            const m2 = E.money2;
+            lastAgreement.lines.forEach((l) => {
+                if (l.status === 'declined') lines.push(`DECLINED — ${l.title}`);
+                else if (l.status === 'pending') lines.push(`PENDING — ${l.title} (${l.reason === 'commercial' ? 'routed to commercial' : l.reason === 'estimate' ? 'free estimate' : 'waiting on an answer'})`);
+                else {
+                    const per = l.frequency === 'eom' ? ' every other month' : l.seasonal ? '/mo Apr–Oct' : '/mo';
+                    lines.push(`AGREED — ${l.title}: ${l.choice.name} — ${m2(l.initial)} initial${l.discount ? ` (${l.discount}% off ${m2(l.listInitial)})` : ''}${l.monthly ? ` + ${m2(l.monthly)}${per}` : ''}${l.tcv ? ` · contract value ${m2(l.tcv)}` : ''}`);
+                }
+            });
+            const t = lastAgreement.totals;
+            let total = `TOTAL — ${m2(t.initial)} due at first service`;
+            if (t.monthly) total += ` + ${m2(t.monthly)}/mo` + (t.hasSeasonal ? ` Apr–Oct (${m2(t.offSeasonMonthly)}/mo Nov–Mar)` : '');
+            if (t.eom) total += ` + ${m2(t.eom)} every other month`;
+            total += ` · contract value ${m2(t.tcv)}`;
+            lines.push(total);
+            lastAgreement.flags.forEach((f) => lines.push('⚠ ' + f));
+        }
+        if (!el('manager-flag').classList.contains('hidden')) lines.push('⚠ MANAGER REVIEW: square footage or home size not captured');
+        el('f-notes').value = lines.join('\n');
+    }
+
+    // =========================================================================
+    // NAME INJECTION + FIELD WIRING
+    // =========================================================================
+    function syncName() {
+        ['inj-name-1', 'inj-name-2', 'inj-name-3', 'inj-name-4'].forEach((id) => { el(id).textContent = firstName(); });
+        if (lastAccount) refreshPricing(); else updateNotes();
+    }
+
+    el('f-firstname').addEventListener('input', syncName);
+    ['f-lastname', 'f-phone', 'f-location', 'f-duration'].forEach((id) => el(id).addEventListener('input', updateNotes));
+    el('f-sqft').addEventListener('change', renderPitch);
+    el('f-family').addEventListener('change', renderPitch);
+
+    el('btn-copy-notes').addEventListener('click', async () => {
+        const btn = el('btn-copy-notes'), text = el('f-notes').value;
+        try { await navigator.clipboard.writeText(text); }
+        catch (e) { el('f-notes').select(); document.execCommand('copy'); }
+        btn.textContent = 'Copied'; btn.classList.add('copied');
+        setTimeout(() => { btn.textContent = 'Copy Notes'; btn.classList.remove('copied'); }, 1600);
+    });
+
+    function submitCall() {
+        alert('Prototype — not wired to save yet. Laying out the flow first; the actual write comes once this shape is confirmed.');
+    }
+    window.submitCall = submitCall;
+
+    buildPestButtons();
+})();
+</script>
+
+</body>
+</html>
