@@ -28,16 +28,19 @@
         background: var(--color-box-translucent); border: 1px solid rgba(255,255,255,0.1);
         border-radius: 12px; padding: 24px;
     }
+    .form-group { margin-bottom: 18px; }
     .grid-2 { display: flex; gap: 15px; margin-bottom: 18px; }
-    .form-group { flex: 1; }
+    .grid-2 .form-group { flex: 1; margin-bottom: 0; }
     label {
         display: block; font-weight: 600; margin-bottom: 8px; font-size: 11px;
         text-transform: uppercase; color: var(--color-mint-soft); letter-spacing: 0.5px;
     }
-    input[type="date"] {
+    input[type="date"], select {
         width: 100%; padding: 12px; border-radius: 8px; font-size: 14px; font-family: inherit;
         border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.15); color: #fff;
     }
+    select { cursor: pointer; }
+    .field-note { font-size: 11px; color: rgba(248,250,252,0.5); margin: 6px 0 0; }
     button {
         width: 100%; background: var(--color-sage-accent); color: #fff; border: none; padding: 16px;
         font-size: 15px; font-weight: 700; border-radius: 8px; cursor: pointer;
@@ -53,9 +56,15 @@
 
 <div id="page">
     <h1>Export Call Data</h1>
-    <p class="subtitle">Pulls every submission and downloads it as a CSV. Leave dates blank to export everything.</p>
+    <p class="subtitle">Pick what to export, choose a date range (optional), and download it as a CSV.</p>
 
     <div class="form-section">
+        <div class="form-group">
+            <label for="export-type">Export</label>
+            <select id="export-type"></select>
+            <p class="field-note" id="export-type-note"></p>
+        </div>
+
         <div class="grid-2">
             <div class="form-group">
                 <label for="date-from">From</label>
@@ -91,7 +100,7 @@
     const db = getFirestore(app);
     const auth = getAuth(app);
 
-    // Awaited before the export query — signing in is async, and querying
+    // Awaited before any export query — signing in is async, and querying
     // before it settles can produce a spurious "Missing or insufficient
     // permissions" error even when the rules are correct.
     const authReady = signInAnonymously(auth).catch((err) => {
@@ -101,19 +110,59 @@
 
     const statusEl = document.getElementById('status');
     const exportBtn = document.getElementById('export-btn');
+    const exportTypeSel = document.getElementById('export-type');
+    const exportTypeNote = document.getElementById('export-type-note');
 
-    // Generic flattener — any field added to the form later (new nested
-    // detail, a renamed key, whatever) automatically becomes its own CSV
-    // column with zero changes needed here. This is why the export doesn't
-    // need "refining" every time the form's branches change.
+    // ------------------------------------------------------------------
+    // Shared helpers
+    // ------------------------------------------------------------------
+    function tsToDate(ts) {
+        return ts && ts.toDate ? ts.toDate() : null;
+    }
+
+    function formatDate(d) {
+        if (!d) return '';
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${mm}/${dd}/${d.getFullYear()}`;
+    }
+
+    function inRange(ts, fromDate, toDate) {
+        const d = tsToDate(ts);
+        if (fromDate && d && d < fromDate) return false;
+        if (toDate && d && d > toDate) return false;
+        // Records with no timestamp are never excluded by a date filter,
+        // matching the original export's behavior.
+        return true;
+    }
+
+    // A sale can come in from either submission path:
+    //  - Outbound Sale Submission: saleDetails lives at the top level
+    //  - Inbound Call -> Inbound Sales Opportunity -> Sold: saleDetails
+    //    lives nested under inboundSales
+    function isOutboundSale(data) {
+        return data.submissionType === 'outbound_sale_submission';
+    }
+    function isInboundSoldSale(data) {
+        return data.submissionType === 'inbound_call'
+            && data.callType === 'inbound_sales'
+            && data.inboundSales
+            && data.inboundSales.outcome === 'sold';
+    }
+    function getSaleDetails(data) {
+        if (isOutboundSale(data)) return data.saleDetails || null;
+        if (isInboundSoldSale(data)) return data.inboundSales.saleDetails || null;
+        return null;
+    }
+
+    // ------------------------------------------------------------------
+    // Generic flattener + CSV writer, kept for any future "export
+    // everything" style export.
+    // ------------------------------------------------------------------
     function flatten(obj, prefix = '', out = {}) {
         for (const [key, value] of Object.entries(obj || {})) {
             const flatKey = prefix ? `${prefix}.${key}` : key;
             if (Array.isArray(value)) {
-                // e.g. saleDetails.packages: [{package, revenue, ...}, ...]
-                // becomes saleDetails.packages.0.package, .0.revenue,
-                // saleDetails.packages.1.package, .1.revenue, etc. — one
-                // column pair per package slot, same as every other field.
                 value.forEach((item, i) => {
                     const itemKey = `${flatKey}.${i}`;
                     if (item && typeof item === 'object') {
@@ -125,7 +174,6 @@
             } else if (value && typeof value === 'object' && !value.toDate) {
                 flatten(value, flatKey, out);
             } else if (value && value.toDate) {
-                // Firestore Timestamp
                 out[flatKey] = value.toDate().toISOString();
             } else {
                 out[flatKey] = value ?? '';
@@ -134,21 +182,108 @@
         return out;
     }
 
-    function toCSV(rows) {
+    function escapeCSV(val) {
+        const s = String(val ?? '');
+        return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
+    }
+
+    // headers: explicit, ordered column list. If omitted, headers are
+    // collected from the union of all row keys (in first-seen order) —
+    // used by the generic/raw export.
+    function toCSV(rows, headers) {
         if (!rows.length) return '';
-        const allKeys = new Set();
-        rows.forEach((r) => Object.keys(r).forEach((k) => allKeys.add(k)));
-        const headers = Array.from(allKeys);
-        const escape = (val) => {
-            const s = String(val ?? '');
-            return /[",\n]/.test(s) ? `"${s.replace(/"/g, '""')}"` : s;
-        };
-        const lines = [headers.join(',')];
+        const cols = headers || (() => {
+            const seen = [];
+            const have = new Set();
+            rows.forEach((r) => Object.keys(r).forEach((k) => { if (!have.has(k)) { have.add(k); seen.push(k); } }));
+            return seen;
+        })();
+        const lines = [cols.map(escapeCSV).join(',')];
         rows.forEach((r) => {
-            lines.push(headers.map((h) => escape(r[h])).join(','));
+            lines.push(cols.map((h) => escapeCSV(r[h])).join(','));
         });
         return lines.join('\n');
     }
+
+    // ------------------------------------------------------------------
+    // EXPORT DEFINITIONS
+    // Each export type declares its CSV headers (in column order) and a
+    // buildRows(docs, fromDate, toDate) function that returns row objects
+    // keyed by those exact header names. Add new export types here.
+    // ------------------------------------------------------------------
+    const EXPORT_TYPES = {
+
+        sales_details: {
+            label: 'Sales Details',
+            note: 'One row per package sold. A sale with multiple packages produces multiple rows.',
+            filenamePrefix: 'sales-details',
+            headers: [
+                'Customer Name', 'Phone Number', 'Date', 'Package',
+                'Initial Price', 'Monthly Price', 'Annual Value',
+                'Sale Type', 'Lead Type'
+            ],
+            buildRows(docs, fromDate, toDate) {
+                const rows = [];
+                docs.forEach((data) => {
+                    const sd = getSaleDetails(data);
+                    if (!sd || !Array.isArray(sd.packages) || !sd.packages.length) return;
+                    if (!inRange(data.timestamp, fromDate, toDate)) return;
+
+                    const outbound = isOutboundSale(data);
+                    const saleType = outbound ? 'Outbound' : 'Inbound';
+                    // Lead Type only exists for Outbound Sale Submissions
+                    // (leadSource). Inbound Sales Opportunities don't
+                    // capture a lead source, so this is left blank there.
+                    const leadType = outbound ? (data.leadSource || '') : '';
+                    const dateStr = formatDate(tsToDate(data.timestamp));
+
+                    sd.packages.forEach((pkg) => {
+                        rows.push({
+                            'Customer Name': data.customerName || '',
+                            'Phone Number': data.customerPhone || '',
+                            'Date': dateStr,
+                            'Package': pkg.package || '',
+                            'Initial Price': pkg.initialPrice != null ? pkg.initialPrice : '',
+                            'Monthly Price': pkg.monthlyPrice != null ? pkg.monthlyPrice : '',
+                            'Annual Value': pkg.revenue != null ? pkg.revenue : '',
+                            'Sale Type': saleType,
+                            'Lead Type': leadType
+                        });
+                    });
+                });
+                return rows;
+            }
+        },
+
+        raw_all: {
+            label: 'Everything (raw)',
+            note: 'Every submission, every field, flattened into one column per field. Use this if you need something not covered by another export.',
+            filenamePrefix: 'call-data-export',
+            headers: null, // auto-detected from data
+            buildRows(docs, fromDate, toDate) {
+                const rows = [];
+                docs.forEach((data, i) => {
+                    if (!inRange(data.timestamp, fromDate, toDate)) return;
+                    rows.push(flatten(data));
+                });
+                return rows;
+            }
+        }
+    };
+
+    // Populate the dropdown from EXPORT_TYPES
+    function populateExportTypes() {
+        exportTypeSel.innerHTML = Object.entries(EXPORT_TYPES)
+            .map(([key, def]) => `<option value="${key}">${def.label}</option>`)
+            .join('');
+        updateNote();
+    }
+    function updateNote() {
+        const def = EXPORT_TYPES[exportTypeSel.value];
+        exportTypeNote.textContent = def ? def.note : '';
+    }
+    exportTypeSel.addEventListener('change', updateNote);
+    populateExportTypes();
 
     window.runExport = async function () {
         exportBtn.disabled = true;
@@ -156,6 +291,9 @@
         statusEl.className = '';
 
         try {
+            const def = EXPORT_TYPES[exportTypeSel.value];
+            if (!def) throw new Error('Unknown export type');
+
             await authReady;
             const q = query(collection(db, 'submissions'), orderBy('timestamp'));
             const snap = await getDocs(q);
@@ -165,27 +303,23 @@
             const fromDate = fromVal ? new Date(fromVal + 'T00:00:00') : null;
             const toDate = toVal ? new Date(toVal + 'T23:59:59') : null;
 
-            const rows = [];
-            snap.forEach((docSnap) => {
-                const data = docSnap.data();
-                const ts = data.timestamp && data.timestamp.toDate ? data.timestamp.toDate() : null;
-                if (fromDate && ts && ts < fromDate) return;
-                if (toDate && ts && ts > toDate) return;
-                rows.push(flatten({ id: docSnap.id, ...data }));
-            });
+            const docs = [];
+            snap.forEach((docSnap) => docs.push({ id: docSnap.id, ...docSnap.data() }));
+
+            const rows = def.buildRows(docs, fromDate, toDate);
 
             if (!rows.length) {
-                statusEl.textContent = 'No submissions found in that range.';
+                statusEl.textContent = 'No matching submissions found in that range.';
                 statusEl.className = 'error';
                 return;
             }
 
-            const csv = toCSV(rows);
+            const csv = toCSV(rows, def.headers);
             const blob = new Blob([csv], { type: 'text/csv' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `call-data-export-${new Date().toISOString().slice(0, 10)}.csv`;
+            a.download = `${def.filenamePrefix}-${new Date().toISOString().slice(0, 10)}.csv`;
             a.click();
             URL.revokeObjectURL(url);
 
